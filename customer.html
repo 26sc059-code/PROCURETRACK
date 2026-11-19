@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard | ProcureTrack</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f4;
+            margin: 0;
+        }
+
+        .dashboard {
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 25px;
+        }
+
+        .welcome {
+            background: #216b3c;
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .action-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #216b3c;
+            box-shadow: 0 3px 10px #00000015;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .logout {
+            display: inline-block;
+            margin-top: 25px;
+            color: #c0392b;
+            font-weight: bold;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <div class="welcome">
+        <h1>Customer Dashboard</h1>
+        <h3 id="customerWelcome">Welcome!</h3>
+        <p>Buy fresh farm products directly from farmers.</p>
+    </div>
+
+    <div class="actions">
+
+        <a href="marketplace.html" class="action-card">
+            <h2>🛒 Marketplace</h2>
+            <p>Browse and purchase fresh farm products.</p>
+        </a>
+
+        <a href="index.html" class="action-card">
+            <h2>🏠 Home</h2>
+            <p>Return to the ProcureTrack homepage.</p>
+        </a>
+
+    </div>
+
+    <a href="login.html?role=customer" class="logout"
+       onclick="sessionStorage.clear()">
+       Logout
+    </a>
+
+</div>
+
+<script>
+    const customerName =
+        sessionStorage.getItem("customerName") || "Customer";
+
+    document.getElementById("customerWelcome").textContent =
+        "Welcome, " + customerName + "!";
+</script>
+
+</body>
+</html>

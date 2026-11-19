@@ -1,0 +1,586 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procurement Schedule | ProcureTrack</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6f3;
+            margin: 0;
+            padding: 20px;
+            color: #26352b;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        header {
+            background: #236b3b;
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        header h1 {
+            margin-top: 0;
+        }
+
+        .back {
+            display: inline-block;
+            color: white;
+            background: #236b3b;
+            padding: 10px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+
+        .info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin: 22px 0;
+        }
+
+        .info-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px #00000010;
+        }
+
+        .info-card h2 {
+            color: #236b3b;
+            margin: 0 0 10px;
+        }
+
+        .filter {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 15px;
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .schedule-card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000010;
+        }
+
+        .schedule-card h2 {
+            color: #236b3b;
+            margin-top: 0;
+        }
+
+        .detail {
+            margin: 12px 0;
+            line-height: 1.5;
+        }
+
+        .capacity {
+            background: #eaf5ed;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .progress {
+            background: #ddd;
+            height: 9px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #236b3b;
+            transition: width 0.3s;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .available {
+            background: #d8f3dc;
+            color: #176b32;
+        }
+
+        .full {
+            background: #ffe0e0;
+            color: #b42318;
+        }
+
+        .book-btn {
+            display: block;
+            text-align: center;
+            background: #236b3b;
+            color: white;
+            padding: 12px;
+            border-radius: 7px;
+            text-decoration: none;
+            margin-top: 18px;
+        }
+
+        .book-btn:hover {
+            background: #174c29;
+        }
+
+        .empty {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .note {
+            color: #777;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 35px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a href="FARMER.HTML" class="back">
+        ← Farmer Dashboard
+    </a>
+
+    <header>
+        <h1>📅 Procurement Schedule</h1>
+        <p>
+            Check procurement centre schedules, available
+            time slots and booking capacity.
+        </p>
+    </header>
+
+    <div class="info">
+
+        <div class="info-card">
+            <h2>4</h2>
+            <p>Procurement Centres</p>
+        </div>
+
+        <div class="info-card">
+            <h2>Monday - Saturday</h2>
+            <p>Working Days (Demo)</p>
+        </div>
+
+        <div class="info-card">
+            <h2>9 AM - 5 PM</h2>
+            <p>Operating Hours (Demo)</p>
+        </div>
+
+    </div>
+
+    <div class="filter">
+
+        <h3>Find Procurement Centre</h3>
+
+        <label for="centreFilter">Select Centre</label>
+
+        <select id="centreFilter">
+            <option value="all">All Centres</option>
+            <option value="Coimbatore Centre">Coimbatore Centre</option>
+            <option value="Pollachi Centre">Pollachi Centre</option>
+            <option value="Tiruppur Centre">Tiruppur Centre</option>
+            <option value="Erode Centre">Erode Centre</option>
+        </select>
+
+        <label for="scheduleDate">Select Booking Date</label>
+
+        <input type="date" id="scheduleDate">
+
+        <p class="note">
+            Select a date to see actual bookings for that day.
+        </p>
+
+    </div>
+
+    <h2>Available Procurement Schedules</h2>
+
+    <div class="schedule-grid" id="scheduleList"></div>
+
+    <footer>
+        <p>© 2026 ProcureTrack | Smart Agricultural Procurement System</p>
+        <p>Demonstration schedule and capacity data.</p>
+    </footer>
+
+</div>
+
+<script>
+
+const schedules = [
+    {
+        centre: "Coimbatore Centre",
+        location: "Coimbatore",
+        days: "Monday - Saturday",
+        hours: "9:00 AM - 5:00 PM",
+        slots: [
+            "09:00 AM - 10:00 AM",
+            "10:00 AM - 11:00 AM",
+            "11:00 AM - 12:00 PM",
+            "02:00 PM - 03:00 PM",
+            "03:00 PM - 04:00 PM"
+        ],
+        capacity: 100
+    },
+    {
+        centre: "Pollachi Centre",
+        location: "Pollachi",
+        days: "Monday - Saturday",
+        hours: "9:00 AM - 5:00 PM",
+        slots: [
+            "09:00 AM - 10:00 AM",
+            "10:00 AM - 11:00 AM",
+            "11:00 AM - 12:00 PM",
+            "02:00 PM - 03:00 PM",
+            "03:00 PM - 04:00 PM"
+        ],
+        capacity: 80
+    },
+    {
+        centre: "Tiruppur Centre",
+        location: "Tiruppur",
+        days: "Monday - Saturday",
+        hours: "9:00 AM - 5:00 PM",
+        slots: [
+            "09:00 AM - 10:00 AM",
+            "10:00 AM - 11:00 AM",
+            "11:00 AM - 12:00 PM",
+            "02:00 PM - 03:00 PM",
+            "03:00 PM - 04:00 PM"
+        ],
+        capacity: 90
+    },
+    {
+        centre: "Erode Centre",
+        location: "Erode",
+        days: "Monday - Saturday",
+        hours: "9:00 AM - 5:00 PM",
+        slots: [
+            "09:00 AM - 10:00 AM",
+            "10:00 AM - 11:00 AM",
+            "11:00 AM - 12:00 PM",
+            "02:00 PM - 03:00 PM",
+            "03:00 PM - 04:00 PM"
+        ],
+        capacity: 100
+    }
+];
+
+// Read bookings safely from localStorage.
+function getBookings() {
+
+    try {
+
+        const bookings = JSON.parse(
+            localStorage.getItem("procureTrackBookings") || "[]"
+        );
+
+        return Array.isArray(bookings) ? bookings : [];
+
+    } catch (error) {
+
+        return [];
+
+    }
+}
+
+// Count bookings for a centre and date.
+function getBookedCount(centre, date) {
+
+    const bookings = getBookings();
+
+    return bookings.filter(booking => {
+
+        const status = String(
+            booking.status || "Booked"
+        ).toLowerCase();
+
+        const isCancelled =
+            status === "cancelled" ||
+            status === "rejected";
+
+        return booking.centre === centre &&
+               booking.date === date &&
+               !isCancelled;
+
+    }).length;
+}
+
+// Count bookings for an individual time slot.
+function getTimeSlotCount(centre, date, time) {
+
+    const bookings = getBookings();
+
+    return bookings.filter(booking => {
+
+        const status = String(
+            booking.status || "Booked"
+        ).toLowerCase();
+
+        const isCancelled =
+            status === "cancelled" ||
+            status === "rejected";
+
+        return booking.centre === centre &&
+               booking.date === date &&
+               booking.time === time &&
+               !isCancelled;
+
+    }).length;
+}
+
+// Match schedule times with the booking page's time values.
+function displayTime(time) {
+    return time;
+}
+
+// Safely display user-provided text.
+function escapeHTML(value) {
+
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+
+}
+
+// Display all schedules.
+function displaySchedules() {
+
+    const selectedCentre =
+        document.getElementById("centreFilter").value;
+
+    const selectedDate =
+        document.getElementById("scheduleDate").value;
+
+    const scheduleList =
+        document.getElementById("scheduleList");
+
+    const filteredSchedules = schedules.filter(schedule => {
+
+        return selectedCentre === "all" ||
+               schedule.centre === selectedCentre;
+
+    });
+
+    if (!selectedDate) {
+
+        scheduleList.innerHTML = `
+            <div class="empty">
+                Please select a date to view booking availability.
+            </div>
+        `;
+
+        return;
+    }
+
+    if (filteredSchedules.length === 0) {
+
+        scheduleList.innerHTML = `
+            <div class="empty">
+                No procurement schedules found.
+            </div>
+        `;
+
+        return;
+    }
+
+    scheduleList.innerHTML = filteredSchedules.map(schedule => {
+
+        const booked = getBookedCount(
+            schedule.centre,
+            selectedDate
+        );
+
+        const remaining = Math.max(
+            0,
+            schedule.capacity - booked
+        );
+
+        const percentage = Math.min(
+            100,
+            (booked / schedule.capacity) * 100
+        );
+
+        const isAvailable = remaining > 0;
+
+        const slotCapacity = Math.floor(
+            schedule.capacity / schedule.slots.length
+        );
+
+        const timeSlotHTML = schedule.slots.map(slot => {
+
+            const count = getTimeSlotCount(
+                schedule.centre,
+                selectedDate,
+                slot
+            );
+
+            const available = Math.max(
+                0,
+                slotCapacity - count
+            );
+
+            return `
+                <p>
+                    ⏰ ${escapeHTML(slot)}
+                    <br>
+                    <small>
+                        Booked: ${count} |
+                        Remaining: ${available}
+                    </small>
+                </p>
+            `;
+
+        }).join("");
+
+        return `
+            <div class="schedule-card">
+
+                <h2>${escapeHTML(schedule.centre)}</h2>
+
+                <p class="detail">
+                    📍 <b>Location:</b>
+                    ${escapeHTML(schedule.location)}
+                </p>
+
+                <p class="detail">
+                    📅 <b>Working Days:</b>
+                    ${escapeHTML(schedule.days)}
+                </p>
+
+                <p class="detail">
+                    🕒 <b>Operating Hours:</b>
+                    ${escapeHTML(schedule.hours)}
+                </p>
+
+                <p class="detail">
+                    🗓️ <b>Selected Date:</b>
+                    ${escapeHTML(selectedDate)}
+                </p>
+
+                <h3>Available Time Slots</h3>
+
+                ${timeSlotHTML}
+
+                <div class="capacity">
+
+                    <b>Daily Booking Capacity</b>
+
+                    <p>
+                        ${booked} / ${schedule.capacity}
+                        bookings used
+                    </p>
+
+                    <div class="progress">
+                        <div class="progress-bar"
+                            style="width:${percentage}%">
+                        </div>
+                    </div>
+
+                    <p>
+                        <b>${remaining}</b>
+                        remaining bookings
+                    </p>
+
+                </div>
+
+                <span class="status ${isAvailable ? "available" : "full"}">
+                    ${isAvailable ? "Slots Available" : "Fully Booked"}
+                </span>
+
+                ${
+                    isAvailable
+                    ? `<a href="book-slot.html" class="book-btn">
+                         Book Procurement Slot
+                       </a>`
+                    : `<p style="color:#b42318;">
+                         No booking capacity remaining.
+                       </p>`
+                }
+
+            </div>
+        `;
+
+    }).join("");
+
+}
+
+// Set default date to today.
+function getLocalToday() {
+
+    const today = new Date();
+
+    return new Date(
+        today.getTime() - today.getTimezoneOffset() * 60000
+    ).toISOString().split("T")[0];
+
+}
+
+const dateInput = document.getElementById("scheduleDate");
+
+dateInput.min = getLocalToday();
+dateInput.value = getLocalToday();
+
+// Refresh when selections change.
+document.getElementById("centreFilter")
+    .addEventListener("change", displaySchedules);
+
+dateInput.addEventListener("change", displaySchedules);
+
+// Initial display.
+displaySchedules();
+
+// Refresh if another page or browser tab changes bookings.
+window.addEventListener("storage", displaySchedules);
+
+</script>
+
+</body>
+</html>

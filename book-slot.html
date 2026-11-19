@@ -1,0 +1,508 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Procurement Slot | ProcureTrack</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6f3;
+            margin: 0;
+            padding: 25px;
+            color: #26352b;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        h1 {
+            color: #236b3b;
+        }
+
+        .back, button {
+            background: #236b3b;
+            color: white;
+            padding: 11px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .booking-form {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 25px;
+            box-shadow: 0 3px 12px #00000012;
+        }
+
+        label {
+            display: block;
+            margin-top: 16px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid #a4d4ae;
+            border-color: #236b3b;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 22px;
+            font-size: 16px;
+        }
+
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
+        .availability {
+            display: none;
+            background: #eaf5ed;
+            color: #236b3b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        .availability.full {
+            background: #ffe8e8;
+            color: #a32020;
+        }
+
+        .success {
+            display: none;
+            background: #e2f5e7;
+            color: #236b3b;
+            padding: 18px;
+            border-radius: 8px;
+            margin-top: 20px;
+            overflow-wrap: anywhere;
+        }
+
+        .success h3 {
+            margin-top: 0;
+        }
+
+        .note {
+            color: #777;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>📅 Book Procurement Slot</h1>
+        <a href="FARMER.HTML" class="back">Dashboard</a>
+    </div>
+
+    <p>Schedule your crop delivery at a procurement centre.</p>
+
+    <div class="booking-form">
+
+        <form id="bookingForm">
+
+            <label for="farmerName">Farmer Name</label>
+            <input type="text" id="farmerName"
+                placeholder="Enter farmer name" required>
+
+            <label for="centre">Procurement Centre</label>
+            <select id="centre" required>
+                <option value="">Select Centre</option>
+                <option value="Coimbatore Centre">Coimbatore Centre</option>
+                <option value="Pollachi Centre">Pollachi Centre</option>
+                <option value="Tiruppur Centre">Tiruppur Centre</option>
+                <option value="Erode Centre">Erode Centre</option>
+            </select>
+
+            <label for="crop">Crop Name</label>
+            <input type="text" id="crop"
+                placeholder="Example: Tomato" required>
+
+            <label for="quantity">Expected Quantity (Kg)</label>
+            <input type="number" id="quantity"
+                min="1" step="any"
+                placeholder="Enter quantity" required>
+
+            <label for="date">Booking Date</label>
+            <input type="date" id="date" required>
+
+            <label for="time">Available Time Slot</label>
+            <select id="time" required>
+                <option value="">Select Time</option>
+                <option value="09:00 AM - 10:00 AM">09:00 AM - 10:00 AM</option>
+                <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                <option value="02:00 PM - 03:00 PM">02:00 PM - 03:00 PM</option>
+                <option value="03:00 PM - 04:00 PM">03:00 PM - 04:00 PM</option>
+            </select>
+
+            <div id="availability" class="availability"></div>
+
+            <p class="note">
+                Availability is calculated from bookings saved in this
+                browser. Capacity values are demonstration settings.
+            </p>
+
+            <button type="submit" id="submitButton">
+                Confirm Booking
+            </button>
+
+        </form>
+
+        <div id="successMessage" class="success"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+const centreCapacities = {
+    "Coimbatore Centre": 100,
+    "Pollachi Centre": 80,
+    "Tiruppur Centre": 90,
+    "Erode Centre": 100
+};
+
+const timeSlots = [
+    "09:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "02:00 PM - 03:00 PM",
+    "03:00 PM - 04:00 PM"
+];
+
+const dateInput = document.getElementById("date");
+const centreInput = document.getElementById("centre");
+const timeInput = document.getElementById("time");
+const availabilityBox = document.getElementById("availability");
+const submitButton = document.getElementById("submitButton");
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
+
+function getLocalToday() {
+    const today = new Date();
+
+    return new Date(
+        today.getTime() - today.getTimezoneOffset() * 60000
+    ).toISOString().split("T")[0];
+}
+
+dateInput.min = getLocalToday();
+
+function getBookings() {
+    try {
+        const data = JSON.parse(
+            localStorage.getItem("procureTrackBookings") || "[]"
+        );
+
+        return Array.isArray(data) ? data : [];
+
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveBookings(bookings) {
+    localStorage.setItem(
+        "procureTrackBookings",
+        JSON.stringify(bookings)
+    );
+}
+
+// Create a notification after successful booking.
+function createBookingNotification(booking) {
+
+    let notifications = [];
+
+    try {
+        notifications = JSON.parse(
+            localStorage.getItem("procureTrackNotifications") || "[]"
+        );
+
+        if (!Array.isArray(notifications)) {
+            notifications = [];
+        }
+
+    } catch (error) {
+        notifications = [];
+    }
+
+    const notification = {
+        id: "NT" + Date.now() + Math.floor(Math.random() * 1000),
+
+        bookingId: booking.bookingId,
+
+        farmerName: booking.farmerName,
+
+        title: "Procurement Slot Booked Successfully",
+
+        message: "Your procurement slot has been booked successfully. Please arrive at " +
+            booking.centre + " on " + booking.date +
+            " during " + booking.time + ".",
+
+        status: "Booked",
+
+        createdAt: new Date().toISOString(),
+
+        read: false
+    };
+
+    notifications.unshift(notification);
+
+    localStorage.setItem(
+        "procureTrackNotifications",
+        JSON.stringify(notifications)
+    );
+}
+
+function getSlotCapacity(centre) {
+
+    const dailyCapacity = centreCapacities[centre];
+
+    if (!dailyCapacity) return 0;
+
+    return Math.floor(dailyCapacity / timeSlots.length);
+}
+
+function getBookedCount(centre, date, time) {
+
+    const bookings = getBookings();
+
+    return bookings.filter(booking => {
+
+        const sameCentre = booking.centre === centre;
+        const sameDate = booking.date === date;
+        const sameTime = booking.time === time;
+
+        const status = String(
+            booking.status || "Booked"
+        ).toLowerCase();
+
+        const isCancelled =
+            status === "cancelled" ||
+            status === "rejected";
+
+        return sameCentre &&
+               sameDate &&
+               sameTime &&
+               !isCancelled;
+
+    }).length;
+}
+
+function updateAvailability() {
+
+    const centre = centreInput.value;
+    const date = dateInput.value;
+    const time = timeInput.value;
+
+    availabilityBox.style.display = "none";
+    availabilityBox.classList.remove("full");
+    submitButton.disabled = false;
+
+    if (!centre || !date || !time) return;
+
+    const capacity = getSlotCapacity(centre);
+
+    const booked = getBookedCount(centre, date, time);
+
+    const remaining = Math.max(0, capacity - booked);
+
+    availabilityBox.style.display = "block";
+
+    if (remaining > 0) {
+
+        availabilityBox.innerHTML = `
+            <b>✓ Slots Available</b><br>
+            Procurement Centre: ${escapeHTML(centre)}<br>
+            Date: ${escapeHTML(date)}<br>
+            Time: ${escapeHTML(time)}<br>
+            Slot Capacity: ${capacity}<br>
+            Already Booked: ${booked}<br>
+            <b>Remaining Slots: ${remaining}</b>
+        `;
+
+    } else {
+
+        availabilityBox.classList.add("full");
+
+        availabilityBox.innerHTML = `
+            <b>⚠ Time Slot Fully Booked</b><br>
+            Centre: ${escapeHTML(centre)}<br>
+            Date: ${escapeHTML(date)}<br>
+            Time: ${escapeHTML(time)}<br>
+            Please select another time slot or date.
+        `;
+
+        submitButton.disabled = true;
+    }
+}
+
+centreInput.addEventListener("change", updateAvailability);
+dateInput.addEventListener("change", updateAvailability);
+timeInput.addEventListener("change", updateAvailability);
+
+document.getElementById("bookingForm").addEventListener(
+    "submit",
+    function(event) {
+
+        event.preventDefault();
+
+        const farmerName =
+            document.getElementById("farmerName").value.trim();
+
+        const centre = centreInput.value;
+
+        const crop =
+            document.getElementById("crop").value.trim();
+
+        const quantity =
+            Number(document.getElementById("quantity").value);
+
+        const date = dateInput.value;
+        const time = timeInput.value;
+
+        if (
+            !farmerName ||
+            !centre ||
+            !crop ||
+            !date ||
+            !time ||
+            !Number.isFinite(quantity) ||
+            quantity <= 0
+        ) {
+            alert("Please enter all valid booking details.");
+            return;
+        }
+
+        if (date < getLocalToday()) {
+            alert("Past-date bookings are not allowed.");
+            return;
+        }
+
+        if (!timeSlots.includes(time)) {
+            alert("Please select a valid time slot.");
+            return;
+        }
+
+        const capacity = getSlotCapacity(centre);
+
+        const booked = getBookedCount(centre, date, time);
+
+        if (booked >= capacity) {
+            alert("Sorry! This time slot is fully booked.");
+            updateAvailability();
+            return;
+        }
+
+        const bookings = getBookings();
+
+        const bookingID = "PT" + Date.now();
+
+        const booking = {
+            id: bookingID,
+            bookingId: bookingID,
+            farmerName: farmerName,
+            centre: centre,
+            crop: crop,
+            cropName: crop,
+            quantity: quantity,
+            date: date,
+            time: time,
+            status: "Booked",
+            paymentStatus: "Pending",
+            createdAt: new Date().toISOString()
+        };
+
+        bookings.push(booking);
+
+        // Save booking first.
+        saveBookings(bookings);
+
+        // Create farmer notification.
+        createBookingNotification(booking);
+
+        document.getElementById("successMessage").innerHTML = `
+            <h3>Booking Confirmed! ✓</h3>
+
+            <p><b>Booking ID:</b> ${escapeHTML(bookingID)}</p>
+            <p><b>Farmer:</b> ${escapeHTML(farmerName)}</p>
+            <p><b>Centre:</b> ${escapeHTML(centre)}</p>
+            <p><b>Crop:</b> ${escapeHTML(crop)}</p>
+            <p><b>Quantity:</b> ${quantity} kg</p>
+            <p><b>Date:</b> ${escapeHTML(date)}</p>
+            <p><b>Time:</b> ${escapeHTML(time)}</p>
+            <p><b>Status:</b> Booked</p>
+            <p><b>Remaining slots:</b> ${capacity - booked - 1}</p>
+
+            <h3>🔔 Notification Created!</h3>
+
+            <p>Your booking confirmation notification has been saved.</p>
+
+            <a href="my-token.html">View My E-Token</a><br><br>
+
+            <a href="notifications.html">View Notifications</a>
+        `;
+
+        document.getElementById("successMessage").style.display = "block";
+
+        this.reset();
+
+        dateInput.min = getLocalToday();
+
+        updateAvailability();
+
+    }
+);
+
+updateAvailability();
+
+</script>
+
+</body>
+</html>

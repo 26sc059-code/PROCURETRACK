@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ProcureTrack | Smart Agriculture</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .admin-portal {
+            border: 2px solid #236b3b;
+        }
+
+        .admin-portal a {
+            background: #236b3b;
+            color: white;
+        }
+
+        .officer-portal {
+            border: 2px solid #2874a6;
+        }
+
+        .officer-portal a {
+            background: #2874a6;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <nav class="navbar">
+            <h2 class="logo">🌱 ProcureTrack</h2>
+
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+
+            <a href="#portals" class="nav-btn">Get Started</a>
+        </nav>
+    </header>
+
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>Connecting Farmers<br>Directly with Customers</h1>
+
+            <p>
+                A smarter way to manage agricultural products,
+                customer orders and procurement schedules.
+            </p>
+
+            <a href="#portals" class="primary-btn">
+                Explore ProcureTrack
+            </a>
+        </div>
+    </section>
+
+    <section class="portals" id="portals">
+        <h2>Choose Your Portal</h2>
+        <p>Get started with ProcureTrack</p>
+
+        <div class="portal-container">
+
+            <div class="portal-card">
+                <div class="portal-icon">👨‍🌾</div>
+                <h3>Farmer Portal</h3>
+                <p>
+                    Add your agricultural products, manage orders,
+                    book procurement slots and track your tokens.
+                </p>
+                <a href="login.html?role=farmer">Farmer Login</a>
+            </div>
+
+            <div class="portal-card">
+                <div class="portal-icon">🛒</div>
+                <h3>Customer Portal</h3>
+                <p>
+                    Explore fresh agricultural products,
+                    place orders and track your purchases.
+                </p>
+                <a href="login.html?role=customer">Customer Login</a>
+            </div>
+
+            <div class="portal-card officer-portal">
+                <div class="portal-icon">🧑‍💼</div>
+                <h3>Procurement Officer Portal</h3>
+                <p>
+                    Verify farmer tokens, inspect crop quality,
+                    record crop weight and process procurement payments.
+                </p>
+                <a href="officer.html">Officer Login</a>
+            </div>
+
+            <div class="portal-card admin-portal">
+                <div class="portal-icon">🛡️</div>
+                <h3>Admin Portal</h3>
+                <p>
+                    Monitor procurement bookings, manage schedules,
+                    review payments and view system reports.
+                </p>
+                <a href="admin-login.html">Admin Login</a>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="services" id="services">
+        <h2>Our Services</h2>
+
+        <div class="service-container">
+
+            <div class="service-card">
+                <h3>🌾 Product Management</h3>
+                <p>Farmers can list and manage their products.</p>
+            </div>
+
+            <div class="service-card">
+                <h3>📦 Order Management</h3>
+                <p>Farmers can accept or reject customer orders.</p>
+            </div>
+
+            <div class="service-card">
+                <h3>📅 Procurement Scheduling</h3>
+                <p>Farmers can book slots and track queue positions.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="about" id="about">
+        <h2>About ProcureTrack</h2>
+
+        <p>
+            ProcureTrack is a smart agricultural procurement
+            and farmer-customer management system designed
+            to make agricultural transactions more transparent
+            and efficient.
+        </p>
+    </section>
+
+    <footer id="contact">
+        <p>© 2026 ProcureTrack | QUANTUM LEAPERS</p>
+        <p>Smart Agriculture. Better Connections.</p>
+    </footer>
+
+</body>
+</html>

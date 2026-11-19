@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product | ProcureTrack</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashbord.css">
+</head>
+<body>
+
+    <main class="dashboard">
+        <section class="welcome">
+            <h1>🌾 Add Agricultural Product</h1>
+            <p>Register your product in ProcureTrack Marketplace.</p>
+        </section>
+
+        <section class="stat-card">
+            <form id="productForm">
+
+                <label>Product Name</label><br>
+                <input type="text" id="productName"
+                       placeholder="Rice, Tomato, Wheat" required>
+                <br><br>
+
+                <label>Category</label><br>
+                <select id="category" required>
+                    <option value="">Select Category</option>
+                    <option>Grains</option>
+                    <option>Vegetables</option>
+                    <option>Fruits</option>
+                    <option>Pulses</option>
+                    <option>Other</option>
+                </select>
+                <br><br>
+
+                <label>Quantity (Kg)</label><br>
+                <input type="number" id="quantity"
+                       min="1" placeholder="Enter quantity" required>
+                <br><br>
+
+                <label>Price per Kg (₹)</label><br>
+                <input type="number" id="price"
+                       min="0.01" step="0.01"
+                       placeholder="Enter price" required>
+                <br><br>
+
+                <label>Product Quality</label><br>
+                <select id="quality" required>
+                    <option value="">Select Quality</option>
+                    <option>Premium</option>
+                    <option>Good</option>
+                    <option>Average</option>
+                </select>
+                <br><br>
+
+                <label>Village / Location</label><br>
+                <input type="text" id="location"
+                       placeholder="Enter your location" required>
+                <br><br>
+
+                <label>Product Description</label><br>
+                <textarea id="description"
+                          placeholder="Describe your product"></textarea>
+                <br><br>
+
+                <button type="submit">Submit Product</button>
+                <a href="FARMER.HTML">Cancel</a>
+
+            </form>
+
+            <p id="message"></p>
+        </section>
+    </main>
+
+    <script>
+        document.getElementById("productForm")
+        .addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const product = {
+                id: Date.now(),
+                name: document.getElementById("productName").value,
+                category: document.getElementById("category").value,
+                quantity: Number(document.getElementById("quantity").value),
+                price: Number(document.getElementById("price").value),
+                quality: document.getElementById("quality").value,
+                location: document.getElementById("location").value,
+                description: document.getElementById("description").value
+            };
+
+            const products = JSON.parse(
+                localStorage.getItem("procureTrackProducts") || "[]"
+            );
+
+            products.push(product);
+
+            localStorage.setItem(
+                "procureTrackProducts",
+                JSON.stringify(products)
+            );
+
+            document.getElementById("message").textContent =
+                "Product added successfully!";
+
+            this.reset();
+        });
+    </script>
+
+</body>
+</html>

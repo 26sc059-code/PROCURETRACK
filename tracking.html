@@ -1,0 +1,359 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Procurement Tracker | ProcureTrack</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6f3;
+            margin: 0;
+            padding: 25px;
+            color: #26352b;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #236b3b;
+        }
+
+        .booking {
+            background: white;
+            padding: 22px;
+            margin-top: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000012;
+        }
+
+        .timeline {
+            margin-top: 25px;
+            padding-left: 15px;
+        }
+
+        .stage {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            padding-bottom: 25px;
+            position: relative;
+        }
+
+        .stage:not(:last-child)::before {
+            content: "";
+            position: absolute;
+            left: 15px;
+            top: 32px;
+            height: calc(100% - 15px);
+            border-left: 3px solid #ddd;
+        }
+
+        .circle {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 1;
+        }
+
+        .completed .circle {
+            background: #236b3b;
+            color: white;
+        }
+
+        .current .circle {
+            background: #f4c542;
+            color: #26352b;
+        }
+
+        .stage h3 {
+            margin: 5px 0;
+        }
+
+        .stage p {
+            color: #777;
+            margin: 5px 0;
+        }
+
+        .back {
+            display: inline-block;
+            background: #236b3b;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .empty {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .booking-id {
+            color: #236b3b;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a href="FARMER.HTML" class="back">← Farmer Dashboard</a>
+
+    <h1>📍 Live Procurement Tracker</h1>
+
+    <p>Track your agricultural procurement progress.</p>
+
+    <div id="trackingList"></div>
+
+</div>
+
+<script>
+
+const stages = [
+    "Slot Booked",
+    "Farmer Arrived",
+    "QR Token Verified",
+    "Crop Weighing",
+    "Quality Inspection",
+    "Procurement Approved",
+    "Payment Processing",
+    "Payment Completed"
+];
+
+function escapeHTML(value) {
+    return String(value ?? "-").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
+
+function getValue(object, possibleNames, fallback = "-") {
+    for (const name of possibleNames) {
+        const value = object[name];
+
+        if (value !== undefined && value !== null && value !== "") {
+            return value;
+        }
+    }
+
+    return fallback;
+}
+
+function displayTracking() {
+
+    const bookings = JSON.parse(
+        localStorage.getItem("procureTrackBookings") || "[]"
+    );
+
+    const trackingList = document.getElementById("trackingList");
+
+    if (bookings.length === 0) {
+        trackingList.innerHTML = `
+            <div class="empty">
+                <h3>No Procurement Bookings Found</h3>
+                <p>Please book a procurement slot first.</p>
+                <a href="book-slot.html">Book Procurement Slot</a>
+            </div>
+        `;
+        return;
+    }
+
+    trackingList.innerHTML = bookings.map(booking => {
+
+        let bookingID = getValue(
+            booking,
+            ["bookingId", "bookingID", "tokenId", "id"]
+        );
+
+        if (/^\d+$/.test(String(bookingID))) {
+            bookingID = "PT" + bookingID;
+        }
+
+        const cropName = getValue(
+            booking,
+            ["cropName", "crop", "productName", "name"],
+            "Crop"
+        );
+
+        const farmerName = getValue(
+            booking,
+            ["farmerName", "farmer"],
+            "Not Available"
+        );
+
+        const quantity = getValue(
+            booking,
+            ["quantity", "expectedQuantity"],
+            "Not Available"
+        );
+
+        const centre = getValue(
+            booking,
+            ["centre", "procurementCentre", "center"],
+            "Not Available"
+        );
+
+        const date = getValue(
+            booking,
+            ["date", "bookingDate"],
+            "Not Available"
+        );
+
+        const currentStatus = String(
+            booking.status || "Booked"
+        ).trim().toLowerCase();
+
+        const paymentStatus = String(
+            booking.paymentStatus || ""
+        ).trim().toLowerCase();
+
+        const statusMap = {
+            "booked": 0,
+            "slot booked": 0,
+            "farmer arrived": 1,
+            "arrived": 1,
+            "qr token verified": 2,
+            "token verified": 2,
+            "crop weighing": 3,
+            "weighing": 3,
+            "quality inspection": 4,
+            "procurement approved": 5,
+            "approved": 5,
+            "payment processing": 6,
+            "payment completed": 7,
+            "completed": 7
+        };
+
+        let currentIndex = statusMap[currentStatus] ?? 0;
+
+        // Payment status is also checked independently.
+        // This ensures the final stage is completed correctly.
+        if (
+            paymentStatus === "completed" ||
+            paymentStatus === "payment completed" ||
+            currentStatus === "payment completed" ||
+            currentStatus === "completed"
+        ) {
+            currentIndex = 7;
+        } else if (
+            paymentStatus === "processing" ||
+            paymentStatus === "payment processing"
+        ) {
+            currentIndex = Math.max(currentIndex, 6);
+        }
+
+        const isFullyCompleted = currentIndex === 7;
+
+        return `
+            <div class="booking">
+
+                <h2>${escapeHTML(cropName)}</h2>
+
+                <p>
+                    <b>Booking ID:</b>
+                    <span class="booking-id">
+                        ${escapeHTML(bookingID)}
+                    </span>
+                </p>
+
+                <p>
+                    <b>Farmer:</b>
+                    ${escapeHTML(farmerName)}
+                </p>
+
+                <p>
+                    <b>Quantity:</b>
+                    ${escapeHTML(quantity)} kg
+                </p>
+
+                <p>
+                    <b>Centre:</b>
+                    ${escapeHTML(centre)}
+                </p>
+
+                <p>
+                    <b>Booking Date:</b>
+                    ${escapeHTML(date)}
+                </p>
+
+                <h3>Procurement Progress</h3>
+
+                <div class="timeline">
+
+                    ${stages.map((stage, index) => {
+
+                        const isCompleted = index <= currentIndex;
+                        const isCurrent = index === currentIndex && !isFullyCompleted;
+
+                        let className = "";
+
+                        if (isCompleted) {
+                            className = "completed";
+                        } else if (isCurrent) {
+                            className = "current";
+                        }
+
+                        let stageText = "Waiting";
+
+                        if (isCompleted) {
+                            stageText = "Completed";
+                        } else if (isCurrent) {
+                            stageText = "Current Status";
+                        }
+
+                        return `
+                            <div class="stage ${className}">
+
+                                <div class="circle">
+                                    ${isCompleted ? "✓" : index + 1}
+                                </div>
+
+                                <div>
+                                    <h3>${stage}</h3>
+                                    <p>${stageText}</p>
+                                </div>
+
+                            </div>
+                        `;
+
+                    }).join("")}
+
+                </div>
+
+                ${
+                    isFullyCompleted
+                    ? "<h3 style='color:#236b3b;'>🎉 Procurement Successfully Completed!</h3>"
+                    : ""
+                }
+
+            </div>
+        `;
+
+    }).join("");
+}
+
+displayTracking();
+
+</script>
+
+</body>
+</html>

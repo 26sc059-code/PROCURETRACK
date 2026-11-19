@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProcureTrack Login</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <section class="portals">
+        <h2 id="loginTitle">Welcome to ProcureTrack</h2>
+        <p id="loginDescription">Please login to continue</p>
+
+        <div class="portal-container">
+            <div class="portal-card">
+                <h3 id="roleTitle">Login</h3>
+
+                <form id="loginForm">
+                    <input type="text"
+                           id="username"
+                           placeholder="Enter your Name"
+                           required>
+
+                    <br><br>
+
+                    <input type="password"
+                           placeholder="Password"
+                           required>
+
+                    <br><br>
+
+                    <button type="submit" id="loginButton">
+                        Login
+                    </button>
+                </form>
+
+                <p id="message"></p>
+            </div>
+        </div>
+      
+        <p>
+    New user?
+    <a id="registerLink" href="#">Create Account</a>
+</p>
+        <p><a href="index.html">Back to Home</a></p>
+    </section>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const role = params.get("role");
+        document.getElementById("registerLink").href =
+    "register.html?role=" + role;
+
+        const title = document.getElementById("loginTitle");
+        const roleTitle = document.getElementById("roleTitle");
+        const button = document.getElementById("loginButton");
+
+        if (role === "farmer") {
+            title.textContent = "Farmer Portal";
+            roleTitle.textContent = "👨‍🌾 Farmer Login";
+            button.textContent = "Login as Farmer";
+        }
+        else if (role === "customer") {
+            title.textContent = "Customer Portal";
+            roleTitle.textContent = "🛒 Customer Login";
+            button.textContent = "Login as Customer";
+        }
+        else {
+            title.textContent = "Invalid Portal";
+            roleTitle.textContent = "Please return to Home";
+            button.disabled = true;
+        }
+
+        
+document.getElementById("loginForm")
+    .addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const username = document.getElementById("username").value.trim();
+
+        if (role === "customer") {
+            sessionStorage.setItem("customerName", username);
+            sessionStorage.setItem("userRole", "customer");
+
+            window.location.href = "customer.html";
+        }
+        else if (role === "farmer") {
+            sessionStorage.setItem("farmerName", username);
+            sessionStorage.setItem("userRole", "farmer");
+
+            window.location.href = "FARMER.HTML";
+        }
+    });
+
+    </script>
+
+</body>
+</html>

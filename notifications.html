@@ -1,0 +1,365 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | ProcureTrack</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6f3;
+            margin: 0;
+            padding: 25px;
+            color: #26352b;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #236b3b;
+        }
+
+        .header, .notification {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 18px;
+            box-shadow: 0 3px 12px #00000012;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .count {
+            background: #e3f3e7;
+            color: #236b3b;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .notification {
+            border-left: 5px solid #236b3b;
+        }
+
+        .notification.unread {
+            background: #f0f8f1;
+            border-left-color: #e09b22;
+        }
+
+        .notification h3 {
+            color: #236b3b;
+            margin-top: 0;
+        }
+
+        .notification p {
+            line-height: 1.6;
+        }
+
+        .details {
+            color: #68746b;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        button {
+            border: none;
+            padding: 10px 14px;
+            margin: 5px 5px 5px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #236b3b;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .delete {
+            background: #c0392b;
+        }
+
+        .back {
+            display: inline-block;
+            background: #236b3b;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .empty {
+            background: white;
+            padding: 30px;
+            margin-top: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a href="FARMER.HTML" class="back">← Farmer Dashboard</a>
+
+    <h1>🔔 Farmer Notifications</h1>
+
+    <p>Stay updated about your procurement bookings and payments.</p>
+
+    <div class="header">
+
+        <div>
+            <h2>My Notifications</h2>
+            <p>Updates from the Procurement Officer</p>
+        </div>
+
+        <div class="count">
+            Unread: <span id="unreadCount">0</span>
+        </div>
+
+    </div>
+
+    <div class="actions" style="margin-top:15px;">
+
+        <button onclick="markAllRead()">
+            Mark All as Read
+        </button>
+
+        <button class="delete" onclick="clearNotifications()">
+            Clear All Notifications
+        </button>
+
+    </div>
+
+    <div id="notificationList"></div>
+
+</div>
+
+<script>
+
+function getNotifications() {
+
+    try {
+
+        const data = JSON.parse(
+            localStorage.getItem("procureTrackNotifications") || "[]"
+        );
+
+        return Array.isArray(data) ? data : [];
+
+    } catch (error) {
+
+        return [];
+
+    }
+
+}
+
+function saveNotifications(notifications) {
+
+    localStorage.setItem(
+        "procureTrackNotifications",
+        JSON.stringify(notifications)
+    );
+
+}
+
+function escapeHTML(value) {
+
+    return String(value ?? "-").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+
+}
+
+function formatDate(dateValue) {
+
+    if (!dateValue) return "Date unavailable";
+
+    const date = new Date(dateValue);
+
+    if (isNaN(date.getTime())) return "Date unavailable";
+
+    return date.toLocaleString();
+
+}
+
+function renderNotifications() {
+
+    const notifications = getNotifications();
+
+    const unread = notifications.filter(
+        notification => notification.read !== true
+    ).length;
+
+    document.getElementById("unreadCount").textContent = unread;
+
+    const notificationList =
+        document.getElementById("notificationList");
+
+    if (notifications.length === 0) {
+
+        notificationList.innerHTML = `
+            <div class="empty">
+                <h2>🔔 No Notifications Yet</h2>
+                <p>Your procurement updates will appear here.</p>
+            </div>
+        `;
+
+        return;
+
+    }
+
+    notificationList.innerHTML = notifications.map(notification => {
+
+        const notificationID = escapeHTML(notification.id);
+
+        return `
+            <div class="notification ${notification.read === true ? "" : "unread"}">
+
+                <h3>
+                    ${escapeHTML(notification.title || "Procurement Update")}
+                </h3>
+
+                <p>
+                    ${escapeHTML(notification.message || "You have a new update.")}
+                </p>
+
+                <div class="details">
+
+                    <b>Booking ID:</b>
+                    ${escapeHTML(notification.bookingId || "-")}<br>
+
+                    <b>Farmer:</b>
+                    ${escapeHTML(notification.farmerName || "-")}<br>
+
+                    <b>Status:</b>
+                    ${escapeHTML(notification.status || "-")}<br>
+
+                    <b>Date:</b>
+                    ${escapeHTML(formatDate(notification.createdAt))}
+
+                </div>
+
+                <p>
+                    <b>
+                        ${notification.read === true ? "✓ Read" : "● Unread"}
+                    </b>
+                </p>
+
+                ${
+                    notification.read === true
+                    ? ""
+                    : `<button data-action="read" data-id="${notificationID}">
+                           Mark as Read
+                       </button>`
+                }
+
+            </div>
+        `;
+
+    }).join("");
+
+}
+
+// Mark one notification as read.
+document.getElementById("notificationList").addEventListener(
+    "click",
+    function(event) {
+
+        const button = event.target.closest("button[data-action='read']");
+
+        if (!button) return;
+
+        const id = button.dataset.id;
+
+        const notifications = getNotifications();
+
+        const notification = notifications.find(
+            item => String(item.id) === id
+        );
+
+        if (notification) {
+
+            notification.read = true;
+
+            saveNotifications(notifications);
+
+            renderNotifications();
+
+        }
+
+    }
+);
+
+// Mark all notifications as read.
+function markAllRead() {
+
+    const notifications = getNotifications();
+
+    notifications.forEach(notification => {
+        notification.read = true;
+    });
+
+    saveNotifications(notifications);
+
+    renderNotifications();
+
+}
+
+// Clear all notifications.
+function clearNotifications() {
+
+    const notifications = getNotifications();
+
+    if (notifications.length === 0) {
+        alert("There are no notifications to clear.");
+        return;
+    }
+
+    if (!confirm("Are you sure you want to clear all notifications?")) {
+        return;
+    }
+
+    saveNotifications([]);
+
+    renderNotifications();
+
+}
+
+// Update when another tab changes notifications.
+window.addEventListener("storage", renderNotifications);
+
+renderNotifications();
+
+</script>
+
+</body>
+</html>

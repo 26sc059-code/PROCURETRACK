@@ -1,0 +1,835 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procurement Officer | ProcureTrack</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6f3;
+            margin: 0;
+            padding: 25px;
+            color: #26352b;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #236b3b;
+        }
+
+        .header, .booking {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-top: 20px;
+            box-shadow: 0 3px 12px #00000012;
+        }
+
+        .booking h2 {
+            color: #236b3b;
+        }
+
+        .details {
+            line-height: 1.9;
+            overflow-wrap: anywhere;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 7px 12px;
+            background: #fff2c2;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        button {
+            border: none;
+            padding: 11px 15px;
+            margin: 6px 4px 6px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #236b3b;
+            color: white;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .reject {
+            background: #c0392b;
+        }
+
+        input, select {
+            display: block;
+            width: 100%;
+            max-width: 350px;
+            padding: 11px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        .empty {
+            background: white;
+            padding: 25px;
+            margin-top: 20px;
+            border-radius: 12px;
+        }
+
+        .back {
+            display: inline-block;
+            background: #236b3b;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .message {
+            color: #236b3b;
+            font-weight: bold;
+        }
+
+        .notification-info {
+            background: #eaf5ed;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .calculation {
+            background: #eaf5ed;
+            border: 1px solid #c9dfce;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 15px 0;
+            max-width: 400px;
+            line-height: 1.9;
+        }
+
+        .calculation h3 {
+            color: #236b3b;
+            margin-top: 0;
+        }
+
+        .amount {
+            color: #16743b;
+            font-size: 23px;
+            font-weight: bold;
+        }
+
+        .help {
+            color: #647368;
+            font-size: 13px;
+        }
+
+        @media(max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .header, .booking {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a href="index.html" class="back">← Home</a>
+
+    <h1>🧑‍🌾 Procurement Officer Dashboard</h1>
+
+    <p>Manage farmer arrivals, QR verification, crop inspection and payments.</p>
+
+    <div class="header">
+
+        <h2>Procurement Management</h2>
+
+        <p>Total Bookings: <b id="totalBookings">0</b></p>
+
+        <p>Pending Bookings: <b id="pendingBookings">0</b></p>
+
+        <p>Approved Bookings: <b id="approvedBookings">0</b></p>
+
+        <div class="notification-info">
+            🔔 Farmer notifications are automatically created
+            whenever a procurement booking status changes.
+        </div>
+
+    </div>
+
+    <div id="bookingList"></div>
+
+</div>
+
+<script>
+
+// Safely display text.
+function escapeHTML(value) {
+    return String(value ?? "-").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
+
+// Get booking ID.
+function getBookingID(booking) {
+    return String(
+        booking.bookingId ||
+        booking.bookingID ||
+        booking.tokenId ||
+        booking.id ||
+        ""
+    );
+}
+
+// Read bookings.
+function getBookings() {
+    try {
+        const bookings = JSON.parse(
+            localStorage.getItem("procureTrackBookings") || "[]"
+        );
+
+        return Array.isArray(bookings) ? bookings : [];
+
+    } catch (error) {
+        return [];
+    }
+}
+
+// Save bookings.
+function saveBookings(bookings) {
+    localStorage.setItem(
+        "procureTrackBookings",
+        JSON.stringify(bookings)
+    );
+}
+
+// Read farmer products.
+function getProducts() {
+    try {
+        const products = JSON.parse(
+            localStorage.getItem("procureTrackProducts") || "[]"
+        );
+
+        return Array.isArray(products) ? products : [];
+
+    } catch (error) {
+        return [];
+    }
+}
+
+// Find farmer's listed crop price.
+function getListedPrice(booking) {
+
+    const products = getProducts();
+
+    const matchingProduct = products.find(product => {
+
+        const sameFarmer =
+            String(product.farmerName || "").trim().toLowerCase() ===
+            String(booking.farmerName || "").trim().toLowerCase();
+
+        const productCrop =
+            String(product.cropName || product.name || "").trim().toLowerCase();
+
+        const bookingCrop =
+            String(booking.cropName || booking.crop || "").trim().toLowerCase();
+
+        return sameFarmer && productCrop === bookingCrop;
+    });
+
+    return Number(
+        booking.pricePerKg ??
+        booking.rate ??
+        booking.price ??
+        matchingProduct?.price ??
+        matchingProduct?.pricePerKg ??
+        0
+    );
+}
+
+// Create a farmer notification.
+function createNotification(booking, title, message) {
+
+    let notifications = [];
+
+    try {
+        notifications = JSON.parse(
+            localStorage.getItem("procureTrackNotifications") || "[]"
+        );
+
+        if (!Array.isArray(notifications)) {
+            notifications = [];
+        }
+
+    } catch (error) {
+        notifications = [];
+    }
+
+    const notification = {
+        id: "NT" + Date.now() + Math.floor(Math.random() * 1000),
+        bookingId: getBookingID(booking),
+        farmerName: booking.farmerName || "Farmer",
+        title: title,
+        message: message,
+        status: booking.status,
+        createdAt: new Date().toISOString(),
+        read: false
+    };
+
+    notifications.unshift(notification);
+
+    localStorage.setItem(
+        "procureTrackNotifications",
+        JSON.stringify(notifications)
+    );
+}
+
+// Update booking status and create notification.
+function updateBookingStatus(booking, status, title, message) {
+
+    booking.status = status;
+
+    createNotification(
+        booking,
+        title,
+        message
+    );
+}
+
+// Calculate live amount in the inspection form.
+function updateCalculation(id) {
+
+    const grossInput = document.getElementById("gross-" + id);
+    const bagInput = document.getElementById("bag-" + id);
+    const priceInput = document.getElementById("price-" + id);
+    const preview = document.getElementById("calculation-" + id);
+
+    if (!grossInput || !bagInput || !priceInput || !preview) {
+        return;
+    }
+
+    const gross = Number(grossInput.value);
+    const bag = Number(bagInput.value);
+    const price = Number(priceInput.value);
+
+    const net = gross - bag;
+    const amount = net * price;
+
+    if (
+        grossInput.value === "" ||
+        bagInput.value === "" ||
+        priceInput.value === "" ||
+        gross <= 0 ||
+        bag < 0 ||
+        price <= 0 ||
+        net <= 0
+    ) {
+        preview.innerHTML = `
+            <h3>Payment Calculation</h3>
+            <p>Enter valid gross weight, bag weight and price.</p>
+        `;
+        return;
+    }
+
+    preview.innerHTML = `
+        <h3>Payment Calculation</h3>
+        <p>Gross Weight: ${gross.toFixed(2)} kg</p>
+        <p>Bag Weight: ${bag.toFixed(2)} kg</p>
+        <p>Net Crop Weight: <b>${net.toFixed(2)} kg</b></p>
+        <p>Price per Kg: ₹${price.toFixed(2)}</p>
+        <hr>
+        <p>Final Amount</p>
+        <div class="amount">₹${amount.toFixed(2)}</div>
+    `;
+}
+
+// Render bookings.
+function renderBookings() {
+
+    const bookings = getBookings();
+
+    document.getElementById("totalBookings").textContent =
+        bookings.length;
+
+    document.getElementById("pendingBookings").textContent =
+        bookings.filter(b =>
+            ![
+                "Procurement Approved",
+                "Payment Processing",
+                "Payment Completed",
+                "Rejected"
+            ].includes(b.status)
+        ).length;
+
+    document.getElementById("approvedBookings").textContent =
+        bookings.filter(b =>
+            [
+                "Procurement Approved",
+                "Payment Processing",
+                "Payment Completed"
+            ].includes(b.status)
+        ).length;
+
+    const bookingList = document.getElementById("bookingList");
+
+    if (bookings.length === 0) {
+
+        bookingList.innerHTML = `
+            <div class="empty">
+                <h3>No Farmer Bookings Found</h3>
+                <p>Bookings will appear here when farmers book procurement slots.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+    bookingList.innerHTML = bookings.map(booking => {
+
+        const id = getBookingID(booking);
+        const status = booking.status || "Booked";
+
+        let actionArea = "";
+
+        if (status === "Booked") {
+
+            actionArea = `
+                <button data-action="arrived" data-id="${escapeHTML(id)}">
+                    Mark Farmer Arrived
+                </button>
+            `;
+
+        }
+
+        else if (status === "Farmer Arrived") {
+
+            actionArea = `
+                <h3>QR Token Verification</h3>
+
+                <p>Enter the farmer's Booking ID to verify the token.</p>
+
+                <input
+                    type="text"
+                    id="qr-${escapeHTML(id)}"
+                    placeholder="Enter Booking ID"
+                >
+
+                <button data-action="verify" data-id="${escapeHTML(id)}">
+                    Verify QR Token
+                </button>
+            `;
+
+        }
+
+        else if (status === "QR Token Verified") {
+
+            const listedPrice = getListedPrice(booking);
+
+            actionArea = `
+                <h3>Digital Weighing and Quality Inspection</h3>
+
+                <label>Gross Weight (kg)</label>
+
+                <input
+                    type="number"
+                    id="gross-${escapeHTML(id)}"
+                    min="0.1"
+                    step="0.01"
+                    placeholder="Enter total weight including bags"
+                    oninput="updateCalculation('${escapeHTML(id)}')"
+                >
+
+                <label>Bag Weight Deduction (kg)</label>
+
+                <input
+                    type="number"
+                    id="bag-${escapeHTML(id)}"
+                    min="0"
+                    step="0.01"
+                    value="0"
+                    oninput="updateCalculation('${escapeHTML(id)}')"
+                >
+
+                <label>Price per Kg (₹)</label>
+
+                <input
+                    type="number"
+                    id="price-${escapeHTML(id)}"
+                    min="0.01"
+                    step="0.01"
+                    value="${listedPrice > 0 ? listedPrice : ""}"
+                    placeholder="Enter price per kg"
+                    oninput="updateCalculation('${escapeHTML(id)}')"
+                >
+
+                <p class="help">
+                    The farmer's listed price is used when a matching product is found.
+                    The officer can edit this price.
+                </p>
+
+                <div class="calculation" id="calculation-${escapeHTML(id)}">
+                    <h3>Payment Calculation</h3>
+                    <p>Enter the weights and price to calculate the final amount.</p>
+                </div>
+
+                <label>Crop Quality</label>
+
+                <select id="quality-${escapeHTML(id)}">
+                    <option value="">Select Quality</option>
+                    <option value="Premium">Premium</option>
+                    <option value="Good">Good</option>
+                    <option value="Average">Average</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+
+                <button data-action="inspect" data-id="${escapeHTML(id)}">
+                    Submit Weighing and Inspection
+                </button>
+            `;
+
+        }
+
+        else if (status === "Quality Inspection") {
+
+            actionArea = `
+                <h3>Procurement Decision</h3>
+
+                <button data-action="approve" data-id="${escapeHTML(id)}">
+                    Approve Procurement
+                </button>
+
+                <button class="reject"
+                    data-action="reject" data-id="${escapeHTML(id)}">
+                    Reject Procurement
+                </button>
+            `;
+
+        }
+
+        else if (status === "Procurement Approved") {
+
+            actionArea = `
+                <h3>Payment Details</h3>
+
+                <p><b>Net Weight:</b> ${escapeHTML(booking.actualWeight)} kg</p>
+                <p><b>Price per Kg:</b> ₹${escapeHTML(booking.pricePerKg)}</p>
+                <p><b>Final Amount:</b> ₹${Number(booking.amount || 0).toFixed(2)}</p>
+
+                <button data-action="payment" data-id="${escapeHTML(id)}">
+                    Start Payment Processing
+                </button>
+            `;
+
+        }
+
+        else if (status === "Payment Processing") {
+
+            actionArea = `
+                <h3>Payment Details</h3>
+
+                <p><b>Net Weight:</b> ${escapeHTML(booking.actualWeight)} kg</p>
+                <p><b>Price per Kg:</b> ₹${escapeHTML(booking.pricePerKg)}</p>
+                <p><b>Final Amount:</b> ₹${Number(booking.amount || 0).toFixed(2)}</p>
+
+                <button data-action="paid" data-id="${escapeHTML(id)}">
+                    Mark Payment Completed
+                </button>
+            `;
+
+        }
+
+        else if (status === "Payment Completed") {
+
+            actionArea = `
+                <h3>Payment Details</h3>
+
+                <p><b>Net Weight:</b> ${escapeHTML(booking.actualWeight)} kg</p>
+                <p><b>Price per Kg:</b> ₹${escapeHTML(booking.pricePerKg)}</p>
+                <p><b>Final Amount:</b> ₹${Number(booking.amount || 0).toFixed(2)}</p>
+
+                <p class="message">
+                    ✓ Procurement and payment completed.
+                </p>
+            `;
+
+        }
+
+        else if (status === "Rejected") {
+
+            actionArea = `
+                <p style="color:#c0392b;font-weight:bold;">
+                    Procurement Rejected
+                </p>
+            `;
+
+        }
+
+        return `
+            <div class="booking">
+
+                <h2>${escapeHTML(booking.cropName || booking.crop || "Crop")}</h2>
+
+                <div class="details">
+
+                    <b>Booking ID:</b> ${escapeHTML(id)}<br>
+
+                    <b>Farmer:</b> ${escapeHTML(booking.farmerName || "-")}<br>
+
+                    <b>Expected Quantity:</b> ${escapeHTML(booking.quantity || "-")} kg<br>
+
+                    <b>Centre:</b> ${escapeHTML(booking.centre || "-")}<br>
+
+                    <b>Booking Date:</b> ${escapeHTML(booking.date || "-")}<br>
+
+                    <b>Gross Weight:</b> ${escapeHTML(booking.grossWeight ?? "Not recorded")} kg<br>
+
+                    <b>Bag Weight:</b> ${escapeHTML(booking.bagWeight ?? "Not recorded")} kg<br>
+
+                    <b>Net Crop Weight:</b> ${escapeHTML(booking.actualWeight ?? "Not recorded")} kg<br>
+
+                    <b>Quality:</b> ${escapeHTML(booking.quality || "Not inspected")}<br>
+
+                    <b>Price per Kg:</b> ${booking.pricePerKg != null ? "₹" + escapeHTML(booking.pricePerKg) : "Not calculated"}<br>
+
+                    <b>Final Amount:</b> ${booking.amount != null ? "₹" + Number(booking.amount).toFixed(2) : "Not calculated"}<br>
+
+                </div>
+
+                <p>
+                    <b>Current Status:</b>
+                    <span class="status">${escapeHTML(status)}</span>
+                </p>
+
+                ${actionArea}
+
+            </div>
+        `;
+
+    }).join("");
+
+}
+
+// Handle officer actions.
+document.getElementById("bookingList").addEventListener(
+    "click",
+    function(event) {
+
+        const button = event.target.closest("button[data-action]");
+
+        if (!button) return;
+
+        const action = button.dataset.action;
+        const id = button.dataset.id;
+
+        const bookings = getBookings();
+
+        const booking = bookings.find(
+            b => getBookingID(b) === id
+        );
+
+        if (!booking) {
+            alert("Booking not found.");
+            return;
+        }
+
+        if (action === "arrived") {
+
+            updateBookingStatus(
+                booking,
+                "Farmer Arrived",
+                "Farmer Arrival Verified",
+                "Your arrival at the procurement centre has been verified."
+            );
+
+        }
+
+        else if (action === "verify") {
+
+            const enteredID =
+                document.getElementById("qr-" + id).value.trim();
+
+            if (enteredID !== id) {
+                alert("Invalid Booking ID. Please verify again.");
+                return;
+            }
+
+            updateBookingStatus(
+                booking,
+                "QR Token Verified",
+                "QR Token Verified",
+                "Your procurement QR token has been successfully verified."
+            );
+
+        }
+
+        else if (action === "inspect") {
+
+            const gross = Number(
+                document.getElementById("gross-" + id).value
+            );
+
+            const bag = Number(
+                document.getElementById("bag-" + id).value
+            );
+
+            const price = Number(
+                document.getElementById("price-" + id).value
+            );
+
+            const quality =
+                document.getElementById("quality-" + id).value;
+
+            const net = gross - bag;
+            const amount = net * price;
+
+            if (
+                !Number.isFinite(gross) ||
+                !Number.isFinite(bag) ||
+                !Number.isFinite(price) ||
+                gross <= 0 ||
+                bag < 0 ||
+                price <= 0 ||
+                net <= 0 ||
+                !quality
+            ) {
+                alert("Please enter valid gross weight, bag weight, price and crop quality.");
+                return;
+            }
+
+            booking.grossWeight = Number(gross.toFixed(2));
+            booking.bagWeight = Number(bag.toFixed(2));
+            booking.actualWeight = Number(net.toFixed(2));
+            booking.netWeight = Number(net.toFixed(2));
+            booking.pricePerKg = Number(price.toFixed(2));
+            booking.amount = Number(amount.toFixed(2));
+            booking.totalAmount = Number(amount.toFixed(2));
+            booking.quality = quality;
+
+            if (quality === "Rejected") {
+
+                updateBookingStatus(
+                    booking,
+                    "Rejected",
+                    "Crop Quality Rejected",
+                    "Your crop did not pass the quality inspection. Please contact the procurement officer."
+                );
+
+            } else {
+
+                updateBookingStatus(
+                    booking,
+                    "Quality Inspection",
+                    "Crop Inspection Completed",
+                    "Your crop weighing and quality inspection have been completed. Net weight: " +
+                    net.toFixed(2) + " kg. Calculated amount: ₹" +
+                    amount.toFixed(2) + ". Await the procurement decision."
+                );
+
+            }
+
+        }
+
+        else if (action === "approve") {
+
+            updateBookingStatus(
+                booking,
+                "Procurement Approved",
+                "Procurement Approved",
+                "Good news! Your crop procurement has been approved. Your calculated procurement amount is ₹" +
+                Number(booking.amount || 0).toFixed(2) + "."
+            );
+
+        }
+
+        else if (action === "reject") {
+
+            if (!confirm("Are you sure you want to reject this procurement?")) {
+                return;
+            }
+
+            updateBookingStatus(
+                booking,
+                "Rejected",
+                "Procurement Rejected",
+                "Your crop procurement has been rejected. Please contact the procurement officer for details."
+            );
+
+        }
+
+        else if (action === "payment") {
+
+            booking.paymentStatus = "Processing";
+
+            updateBookingStatus(
+                booking,
+                "Payment Processing",
+                "Payment Processing Started",
+                "Your procurement payment of ₹" +
+                Number(booking.amount || 0).toFixed(2) +
+                " is now being processed."
+            );
+
+        }
+
+        else if (action === "paid") {
+
+            booking.paymentStatus = "Completed";
+
+            updateBookingStatus(
+                booking,
+                "Payment Completed",
+                "Payment Completed",
+                "Your procurement payment of ₹" +
+                Number(booking.amount || 0).toFixed(2) +
+                " has been marked as completed."
+            );
+
+        }
+
+        saveBookings(bookings);
+
+        alert("Booking updated and farmer notification created!");
+
+        renderBookings();
+
+    }
+);
+
+// Initial display.
+renderBookings();
+
+// Refresh when bookings change in another browser tab.
+window.addEventListener("storage", renderBookings);
+
+</script>
+
+</body>
+</html>

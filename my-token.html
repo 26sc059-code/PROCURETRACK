@@ -1,0 +1,596 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My E-Token | ProcureTrack</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6f3;
+            margin: 0;
+            padding: 25px;
+            color: #26352b;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        h1 {
+            color: #236b3b;
+        }
+
+        .back, button {
+            background: #236b3b;
+            color: white;
+            padding: 11px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .token {
+            background: white;
+            padding: 25px;
+            margin-top: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000012;
+        }
+
+        .token-card {
+            border: 2px dashed #236b3b;
+            padding: 22px;
+            border-radius: 10px;
+        }
+
+        .token-id {
+            font-size: 22px;
+            color: #236b3b;
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail {
+            background: #f3f6f3;
+            padding: 12px;
+            border-radius: 7px;
+        }
+
+        .detail p {
+            margin-bottom: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .queue-box {
+            background: #eaf5ed;
+            border-left: 5px solid #236b3b;
+            padding: 18px;
+            border-radius: 8px;
+            margin-top: 22px;
+        }
+
+        .queue-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .queue-item {
+            background: white;
+            padding: 13px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .queue-number {
+            font-size: 25px;
+            color: #236b3b;
+            font-weight: bold;
+        }
+
+        .queue-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .queue-status {
+            display: inline-block;
+            padding: 7px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+
+        .waiting {
+            background: #fff0c2;
+            color: #856404;
+        }
+
+        .processing {
+            background: #dceeff;
+            color: #155b91;
+        }
+
+        .completed {
+            background: #d8f3dc;
+            color: #176b32;
+        }
+
+        .rejected {
+            background: #ffe0e0;
+            color: #b42318;
+        }
+
+        #qrcode {
+            margin: 25px auto;
+            width: 150px;
+            min-height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .empty {
+            background: white;
+            padding: 25px;
+            margin-top: 25px;
+            border-radius: 10px;
+        }
+
+        .print {
+            margin-top: 15px;
+        }
+
+        .note {
+            color: #777;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        @media print {
+            .back, .print {
+                display: none;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .token {
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🎫 My E-Token</h1>
+        <a href="FARMER.HTML" class="back">Dashboard</a>
+    </div>
+
+    <p>Your digital procurement booking tokens and queue information.</p>
+
+    <div id="tokenList"></div>
+
+</div>
+
+<script>
+
+// Estimated time per farmer in minutes.
+// This is a demonstration value.
+const MINUTES_PER_FARMER = 10;
+
+// Read bookings safely.
+function getBookings() {
+
+    try {
+
+        const bookings = JSON.parse(
+            localStorage.getItem("procureTrackBookings") || "[]"
+        );
+
+        return Array.isArray(bookings) ? bookings : [];
+
+    } catch (error) {
+
+        return [];
+
+    }
+}
+
+// Escape HTML.
+function escapeHTML(value) {
+
+    return String(value ?? "-").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+
+}
+
+// Get booking ID from supported field names.
+function getBookingID(booking) {
+
+    return booking.bookingId ||
+           booking.id ||
+           booking.bookingID ||
+           booking.tokenId ||
+           "-";
+
+}
+
+// Determine whether a booking is active.
+function isActiveBooking(booking) {
+
+    const status = String(
+        booking.status || "Booked"
+    ).toLowerCase();
+
+    return ![
+        "payment completed",
+        "completed",
+        "rejected",
+        "cancelled"
+    ].includes(status);
+
+}
+
+// Check whether a booking is completed.
+function isCompleted(booking) {
+
+    const status = String(
+        booking.status || ""
+    ).toLowerCase();
+
+    const paymentStatus = String(
+        booking.paymentStatus || ""
+    ).toLowerCase();
+
+    return status === "payment completed" ||
+           status === "completed" ||
+           paymentStatus === "completed";
+
+}
+
+// Check whether a booking is currently being processed.
+function isProcessing(booking) {
+
+    const status = String(
+        booking.status || ""
+    ).toLowerCase();
+
+    return [
+        "farmer arrived",
+        "qr token verified",
+        "quality inspection",
+        "procurement approved",
+        "payment processing"
+    ].includes(status);
+
+}
+
+// Calculate queue position.
+function getQueueInformation(currentBooking, allBookings) {
+
+    if (!isActiveBooking(currentBooking)) {
+
+        return {
+            position: "-",
+            ahead: 0,
+            waitingTime: 0,
+            status: "Completed"
+        };
+
+    }
+
+    const currentID = getBookingID(currentBooking);
+
+    // Get active bookings for the same centre, date and time.
+    const sameSlotBookings = allBookings.filter(booking => {
+
+        return booking.centre === currentBooking.centre &&
+               booking.date === currentBooking.date &&
+               booking.time === currentBooking.time &&
+               isActiveBooking(booking);
+
+    });
+
+    // Sort by booking creation time, using the ID as a fallback.
+    sameSlotBookings.sort((a, b) => {
+
+        const timeA = Number(
+            String(getBookingID(a)).replace("PT", "")
+        ) || 0;
+
+        const timeB = Number(
+            String(getBookingID(b)).replace("PT", "")
+        ) || 0;
+
+        return timeA - timeB;
+
+    });
+
+    const position = sameSlotBookings.findIndex(booking => {
+
+        return getBookingID(booking) === currentID;
+
+    }) + 1;
+
+    const ahead = position > 0 ? position - 1 : 0;
+
+    const waitingTime = ahead * MINUTES_PER_FARMER;
+
+    let status = "Waiting";
+
+    if (isProcessing(currentBooking)) {
+        status = "Processing";
+    }
+
+    return {
+        position: position > 0 ? position : "-",
+        ahead: ahead,
+        waitingTime: waitingTime,
+        status: status
+    };
+
+}
+
+// Create status badge.
+function getStatusClass(status) {
+
+    if (status === "Completed") {
+        return "completed";
+    }
+
+    if (status === "Processing") {
+        return "processing";
+    }
+
+    if (status === "Rejected") {
+        return "rejected";
+    }
+
+    return "waiting";
+
+}
+
+// Display all tokens.
+function displayTokens() {
+
+    const bookings = getBookings();
+
+    const tokenList = document.getElementById("tokenList");
+
+    if (bookings.length === 0) {
+
+        tokenList.innerHTML = `
+            <div class="empty">
+                <h3>No E-Tokens Available</h3>
+                <p>Please book a procurement slot first.</p>
+                <a class="back" href="book-slot.html">Book a Slot</a>
+            </div>
+        `;
+
+        return;
+
+    }
+
+    tokenList.innerHTML = bookings.map((booking, index) => {
+
+        const bookingID = getBookingID(booking);
+
+        const queue = getQueueInformation(
+            booking,
+            bookings
+        );
+
+        const rejected =
+            String(booking.status || "").toLowerCase() === "rejected";
+
+        const finalStatus = rejected
+            ? "Rejected"
+            : isCompleted(booking)
+                ? "Completed"
+                : queue.status;
+
+        return `
+            <div class="token">
+
+                <div class="token-card">
+
+                    <h2>PROCURETRACK</h2>
+
+                    <p>Digital Procurement E-Token</p>
+
+                    <p>Token ID</p>
+
+                    <div class="token-id">
+                        ${escapeHTML(bookingID)}
+                    </div>
+
+                    <div class="details">
+
+                        <div class="detail">
+                            <b>Farmer Name</b>
+                            <p>${escapeHTML(booking.farmerName)}</p>
+                        </div>
+
+                        <div class="detail">
+                            <b>Procurement Centre</b>
+                            <p>${escapeHTML(booking.centre)}</p>
+                        </div>
+
+                        <div class="detail">
+                            <b>Crop</b>
+                            <p>${escapeHTML(booking.crop || booking.cropName)}</p>
+                        </div>
+
+                        <div class="detail">
+                            <b>Quantity</b>
+                            <p>${escapeHTML(booking.quantity)} kg</p>
+                        </div>
+
+                        <div class="detail">
+                            <b>Booking Date</b>
+                            <p>${escapeHTML(booking.date)}</p>
+                        </div>
+
+                        <div class="detail">
+                            <b>Time Slot</b>
+                            <p>${escapeHTML(booking.time)}</p>
+                        </div>
+
+                        <div class="detail">
+                            <b>Booking Status</b>
+                            <p>${escapeHTML(booking.status)}</p>
+                        </div>
+
+                    </div>
+
+                    <div class="queue-box">
+
+                        <h3>📍 Live Queue Information</h3>
+
+                        <div class="queue-grid">
+
+                            <div class="queue-item">
+                                <div class="queue-number">
+                                    ${escapeHTML(queue.position)}
+                                </div>
+                                <div class="queue-label">
+                                    Queue Position
+                                </div>
+                            </div>
+
+                            <div class="queue-item">
+                                <div class="queue-number">
+                                    ${queue.ahead}
+                                </div>
+                                <div class="queue-label">
+                                    Farmers Ahead
+                                </div>
+                            </div>
+
+                            <div class="queue-item">
+                                <div class="queue-number">
+                                    ${queue.waitingTime}
+                                </div>
+                                <div class="queue-label">
+                                    Estimated Minutes
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <span class="queue-status ${getStatusClass(finalStatus)}">
+                            ${escapeHTML(finalStatus)}
+                        </span>
+
+                        <p class="note">
+                            Estimated waiting time is calculated
+                            using a demonstration average of
+                            ${MINUTES_PER_FARMER} minutes per farmer.
+                            Actual waiting time may vary.
+                        </p>
+
+                    </div>
+
+                    <h3 style="text-align:center">
+                        Scan QR Code
+                    </h3>
+
+                    <div id="qr-${index}"></div>
+
+                    <p style="text-align:center">
+                        Present this token at the procurement centre.
+                    </p>
+
+                </div>
+
+                <button class="print" onclick="window.print()">
+                    Print / Save Token
+                </button>
+
+            </div>
+        `;
+
+    }).join("");
+
+    // Generate QR codes after token cards are displayed.
+    bookings.forEach((booking, index) => {
+
+        const qrElement = document.getElementById("qr-" + index);
+
+        if (typeof QRCode !== "undefined") {
+
+            new QRCode(qrElement, {
+                text: JSON.stringify({
+                    tokenId: getBookingID(booking),
+                    farmer: booking.farmerName,
+                    centre: booking.centre,
+                    date: booking.date,
+                    time: booking.time
+                }),
+                width: 150,
+                height: 150
+            });
+
+        } else {
+
+            qrElement.textContent =
+                "QR library unavailable. Token ID: " +
+                getBookingID(booking);
+
+        }
+
+    });
+
+}
+
+// Initial display.
+displayTokens();
+
+// Refresh when booking information changes in another tab.
+window.addEventListener("storage", displayTokens);
+
+</script>
+
+</body>
+</html>

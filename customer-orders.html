@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Orders - ProcureTrack</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f6f3;
+            margin: 0;
+            padding: 25px;
+            color: #26352b;
+        }
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h1 { color: #236b3b; }
+        .back, button {
+            background: #236b3b;
+            color: white;
+            padding: 10px 15px;
+            border: 0;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .orders {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+            margin-top: 25px;
+        }
+        .order {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000012;
+        }
+        .order h3 { color: #236b3b; }
+        .status {
+            font-weight: bold;
+            color: #236b3b;
+        }
+        .reject { background: #c0392b; }
+        .next { background: #2874a6; }
+        .empty {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Customer Orders</h1>
+        <a href="FARMER.HTML" class="back">Back to Dashboard</a>
+    </div>
+
+    <p>Manage orders placed by customers for your farm products.</p>
+
+    <div id="orderList" class="orders"></div>
+</div>
+
+<script>
+    function displayOrders() {
+        const orders = JSON.parse(
+            localStorage.getItem("procureTrackOrders") || "[]"
+        );
+
+        const orderList = document.getElementById("orderList");
+
+        if (orders.length === 0) {
+            orderList.innerHTML =
+                '<div class="empty">No customer orders received yet.</div>';
+            return;
+        }
+
+        orderList.innerHTML = orders.map((order, index) => `
+            <div class="order">
+                <h3>${escapeHTML(order.productName)}</h3>
+                <p><b>Customer:</b> ${escapeHTML(order.customerName)}</p>
+                <p><b>Quantity:</b> ${escapeHTML(order.quantity)} kg</p>
+                <p><b>Total:</b> ₹${escapeHTML(order.total)}</p>
+                <p><b>Order Status:</b>
+                    <span class="status">${escapeHTML(order.status)}</span>
+                </p>
+                <div class="actions">
+                    ${order.status === "Pending" ? `
+                        <button onclick="updateOrder(${index}, 'Accepted')">Accept</button>
+                        <button class="reject" onclick="updateOrder(${index}, 'Rejected')">Reject</button>
+                    ` : ""}
+                    ${order.status === "Accepted" ? `
+                        <button class="next" onclick="updateOrder(${index}, 'Preparing')">Start Preparing</button>
+                    ` : ""}
+                    ${order.status === "Preparing" ? `
+                        <button class="next" onclick="updateOrder(${index}, 'Ready for Delivery')">Ready for Delivery</button>
+                    ` : ""}
+                    ${order.status === "Ready for Delivery" ? `
+                        <button class="next" onclick="updateOrder(${index}, 'Delivered')">Mark Delivered</button>
+                    ` : ""}
+                </div>
+            </div>
+        `).join("");
+    }
+
+    function escapeHTML(value) {
+        return String(value ?? "-").replace(/[&<>"']/g, character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[character]);
+    }
+
+    function updateOrder(index, newStatus) {
+        const orders = JSON.parse(
+            localStorage.getItem("procureTrackOrders") || "[]"
+        );
+
+        orders[index].status = newStatus;
+
+        localStorage.setItem("procureTrackOrders", JSON.stringify(orders));
+
+        alert("Order status updated to " + newStatus);
+        displayOrders();
+    }
+
+    displayOrders();
+</script>
+
+</body>
+</html>

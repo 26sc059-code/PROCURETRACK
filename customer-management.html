@@ -1,0 +1,334 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Management | ProcureTrack</title>
+
+<script>
+if (sessionStorage.getItem("userRole") !== "admin") {
+    window.location.replace("admin-login.html");
+}
+</script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f6f3;
+    color: #26352b;
+}
+
+header {
+    background: #236b3b;
+    color: white;
+    padding: 22px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 22px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.back, .logout {
+    padding: 10px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.back {
+    background: white;
+    color: #236b3b;
+}
+
+.logout {
+    background: #a83232;
+    color: white;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px #00000010;
+    margin-bottom: 15px;
+}
+
+.card h3 {
+    color: #236b3b;
+}
+
+.number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #236b3b;
+}
+
+.search {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    margin: 20px 0;
+    font-size: 15px;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background: #eaf5ed;
+    color: #236b3b;
+}
+
+.empty {
+    color: #777;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    color: #777;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🛒 Customer Management</h1>
+    <p>Monitor customers and their marketplace orders.</p>
+</header>
+
+<div class="container">
+
+    <div class="topbar">
+        <h2>Customer Overview</h2>
+        <div>
+            <a href="admin.html" class="back">← Dashboard</a>
+            <button class="logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="card">
+            <h3>Total Customers</h3>
+            <div class="number" id="totalCustomers">0</div>
+        </div>
+
+        <div class="card">
+            <h3>Total Orders</h3>
+            <div class="number" id="totalOrders">0</div>
+        </div>
+
+        <div class="card">
+            <h3>Pending Orders</h3>
+            <div class="number" id="pendingOrders">0</div>
+        </div>
+    </div>
+
+    <input
+        type="text"
+        class="search"
+        id="search"
+        placeholder="Search customer by name..."
+        oninput="displayCustomers()"
+    >
+
+    <div id="customerList"></div>
+
+</div>
+
+<footer>
+    ProcureTrack © 2026 | QUANTUM LEAPERS
+</footer>
+
+<script>
+
+function readData(key) {
+    try {
+        const data = JSON.parse(localStorage.getItem(key) || "[]");
+        return Array.isArray(data) ? data : [];
+    } catch {
+        return [];
+    }
+}
+
+function safe(value) {
+    return String(value ?? "-").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+function getCustomers() {
+
+    const orders = readData("procureTrackOrders");
+    const customers = {};
+
+    orders.forEach(order => {
+
+        const name = String(
+            order.customerName || order.customer || ""
+        ).trim();
+
+        if (!name) return;
+
+        const key = name.toLowerCase();
+
+        if (!customers[key]) {
+            customers[key] = {
+                name: name,
+                orders: []
+            };
+        }
+
+        customers[key].orders.push(order);
+    });
+
+    return Object.values(customers);
+}
+
+function displayCustomers() {
+
+    const orders = readData("procureTrackOrders");
+    const customers = getCustomers();
+
+    const pending = orders.filter(order =>
+        String(order.status || "Pending").toLowerCase() === "pending"
+    ).length;
+
+    document.getElementById("totalCustomers").textContent =
+        customers.length;
+
+    document.getElementById("totalOrders").textContent =
+        orders.length;
+
+    document.getElementById("pendingOrders").textContent =
+        pending;
+
+    const search = document.getElementById("search")
+        .value.trim().toLowerCase();
+
+    const filtered = customers.filter(customer =>
+        customer.name.toLowerCase().includes(search)
+    );
+
+    const container = document.getElementById("customerList");
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="card empty">
+                No customer records found.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filtered.map(customer => `
+
+        <div class="card">
+
+            <h3>👤 ${safe(customer.name)}</h3>
+
+            <p><strong>Total Orders:</strong>
+                ${customer.orders.length}
+            </p>
+
+            <h4>Order Details</h4>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Farmer</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${customer.orders.map(order => `
+                            <tr>
+                                <td>${safe(
+                                    order.productName ||
+                                    order.name ||
+                                    order.cropName
+                                )}</td>
+
+                                <td>${safe(order.quantity)} Kg</td>
+
+                                <td>₹${safe(
+                                    order.totalPrice ??
+                                    order.price ??
+                                    "-"
+                                )}</td>
+
+                                <td>${safe(order.farmerName)}</td>
+
+                                <td>${safe(order.status || "Pending")}</td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+    `).join("");
+}
+
+function logout() {
+    sessionStorage.removeItem("userRole");
+    window.location.replace("admin-login.html");
+}
+
+displayCustomers();
+
+window.addEventListener("storage", displayCustomers);
+
+</script>
+
+</body>
+</html>

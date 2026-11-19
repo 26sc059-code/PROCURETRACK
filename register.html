@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProcureTrack Registration</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <section class="portals">
+        <h2 id="registerTitle">Create Your Account</h2>
+        <p id="registerDescription">Join ProcureTrack today!</p>
+
+        <div class="portal-container">
+            <div class="portal-card">
+
+                <h3 id="roleTitle">Registration</h3>
+
+                <form id="registerForm">
+
+                    <input type="text"
+                           id="fullName"
+                           placeholder="Enter Your Full Name"
+                           required>
+
+                    <br><br>
+
+                    <input type="tel"
+                           id="phone"
+                           placeholder="Enter Mobile Number"
+                           pattern="[0-9]{10}"
+                           maxlength="10"
+                           required>
+
+                    <br><br>
+
+                    <input type="text"
+                           id="location"
+                           placeholder="Enter Your Village / City"
+                           required>
+
+                    <br><br>
+
+                    <input type="password"
+                           id="password"
+                           placeholder="Create Password"
+                           minlength="6"
+                           required>
+
+                    <br><br>
+
+                    <input type="password"
+                           id="confirmPassword"
+                           placeholder="Confirm Password"
+                           minlength="6"
+                           required>
+
+                    <br><br>
+
+                    <button type="submit" id="registerButton">
+                        Create Account
+                    </button>
+
+                </form>
+
+                <p id="message"></p>
+
+                <p>
+                    Already have an account?
+                    <a id="loginLink" href="login.html">Login</a>
+                </p>
+
+                <p><a href="index.html">Back to Home</a></p>
+
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const role = params.get("role");
+
+        const roleTitle = document.getElementById("roleTitle");
+        const registerTitle = document.getElementById("registerTitle");
+
+        if (role === "farmer") {
+            roleTitle.textContent = "👨‍🌾 Farmer Registration";
+            registerTitle.textContent = "Join as a Farmer";
+        }
+        else if (role === "customer") {
+            roleTitle.textContent = "🛒 Customer Registration";
+            registerTitle.textContent = "Join as a Customer";
+        }
+        else {
+            roleTitle.textContent = "Invalid Registration Portal";
+            document.getElementById("registerButton").disabled = true;
+        }
+
+        document.getElementById("loginLink").href =
+            "login.html?role=" + role;
+
+        document.getElementById("registerForm")
+            .addEventListener("submit", function(event) {
+                event.preventDefault();
+
+                const password =
+                    document.getElementById("password").value;
+
+                const confirmPassword =
+                    document.getElementById("confirmPassword").value;
+
+                if (password !== confirmPassword) {
+                    document.getElementById("message").textContent =
+                        "Passwords do not match!";
+                    return;
+                }
+
+                document.getElementById("message").textContent =
+                    "Registration form validated! Firebase account creation will be added later.";
+            });
+    </script>
+
+</body>
+</html>

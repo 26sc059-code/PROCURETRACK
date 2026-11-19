@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Dashboard | ProcureTrack</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashbord.css">
+</head>
+
+<body>
+
+    <header class="dashboard-header">
+        <h2>🌱 ProcureTrack</h2>
+
+        <div>
+            <span>👨‍🌾 Farmer</span>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="welcome">
+            <h1>Welcome, Farmer!</h1>
+            <p>
+                Manage your products, customer orders and
+                procurement activities.
+            </p>
+        </section>
+
+        <section class="stats">
+
+            <div class="stat-card">
+                <h3>🌾 My Products</h3>
+                <h2 id="productCount">0</h2>
+                <p>Listed products</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>📦 New Orders</h3>
+                <h2 id="orderCount">0</h2>
+                <p>Pending orders</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>🎫 My Tokens</h3>
+                <h2 id="tokenCount">0</h2>
+                <p>Active tokens</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>📅 Bookings</h3>
+                <h2 id="bookingCount">0</h2>
+                <p>Procurement slots</p>
+            </div>
+
+        </section>
+
+        <section class="dashboard-section">
+
+            <h2>Quick Actions</h2>
+
+            <div class="actions">
+
+                <a href="product.html" class="action-card">
+                    <span>➕</span>
+                    <h3>Add Product</h3>
+                    <p>List your agricultural products.</p>
+                </a>
+
+                <a href="my-products.html" class="action-card">
+                    <span>📋</span>
+                    <h3>My Products</h3>
+                    <p>Manage your listed products.</p>
+                </a>
+
+                <a href="customer-orders.html" class="action-card">
+                    <span>🛒</span>
+                    <h3>Customer Orders</h3>
+                    <p>Accept or reject customer orders.</p>
+                </a>
+
+                <a href="schedule.html" class="action-card">
+                    <span>📊</span>
+                    <h3>Procurement Schedule</h3>
+                    <p>View centre schedules, working days and available booking capacity.</p>
+                </a>
+
+                <a href="book-slot.html" class="action-card">
+                    <span>📅</span>
+                    <h3>Book Procurement Slot</h3>
+                    <p>Select a centre and booking time.</p>
+                </a>
+
+                <a href="my-token.html" class="action-card">
+                    <span>🎫</span>
+                    <h3>My E-Token</h3>
+                    <p>View your digital token.</p>
+                </a>
+
+                <a href="payment-status.html" class="action-card">
+                    <span>💰</span>
+                    <h3>Payment Status</h3>
+                    <p>Track your procurement payments.</p>
+                </a>
+
+                <a href="tracking.html" class="action-card">
+                    <span>📍</span>
+                    <h3>Live Procurement Tracker</h3>
+                    <p>Track your procurement progress.</p>
+                </a>
+
+                <a href="notifications.html" class="action-card">
+                   <span>🔔</span>
+                   <h3>Notifications</h3>
+                   <p>View procurement updates and payment alerts.</p>
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+
+        function logout() {
+            window.location.href = "login.html?role=farmer";
+        }
+
+        // Load dashboard counts
+        function loadDashboardCounts() {
+
+            const products = JSON.parse(
+                localStorage.getItem("procureTrackProducts") || "[]"
+            );
+
+            const orders = JSON.parse(
+                localStorage.getItem("procureTrackOrders") || "[]"
+            );
+
+            const bookings = JSON.parse(
+                localStorage.getItem("procureTrackBookings") || "[]"
+            );
+
+            const activeBookings = bookings.filter(booking => {
+                const status = String(booking.status || "").toLowerCase();
+
+                return status !== "payment completed" &&
+                       status !== "completed" &&
+                       status !== "rejected";
+            });
+
+            document.getElementById("productCount").textContent =
+                products.length;
+
+            document.getElementById("orderCount").textContent =
+                orders.filter(order =>
+                    String(order.status || "").toLowerCase() === "pending"
+                ).length;
+
+            document.getElementById("tokenCount").textContent =
+                activeBookings.length;
+
+            document.getElementById("bookingCount").textContent =
+                bookings.length;
+        }
+
+        loadDashboardCounts();
+
+    </script>
+
+</body>
+</html>

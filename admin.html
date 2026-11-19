@@ -1,0 +1,550 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | ProcureTrack</title>
+
+<script>
+if (sessionStorage.getItem("userRole") !== "admin") {
+    window.location.replace("admin-login.html");
+}
+</script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f6f3;
+    color: #26352b;
+}
+
+header {
+    background: #236b3b;
+    color: white;
+    padding: 22px 30px;
+}
+
+header h1 {
+    margin: 0 0 8px;
+}
+
+.container {
+    max-width: 1150px;
+    margin: auto;
+    padding: 25px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.top-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.back, .logout {
+    display: inline-block;
+    padding: 10px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.back {
+    background: white;
+    color: #236b3b;
+}
+
+.logout {
+    background: #a83232;
+    color: white;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 18px;
+    margin-top: 25px;
+}
+
+.stat-card {
+    background: white;
+    padding: 22px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px #00000012;
+}
+
+.stat-card h3 {
+    color: #647368;
+    font-size: 15px;
+}
+
+.stat-card p {
+    color: #236b3b;
+    font-size: 30px;
+    font-weight: bold;
+    margin: 10px 0 0;
+}
+
+.section {
+    background: white;
+    padding: 22px;
+    border-radius: 12px;
+    margin-top: 25px;
+    box-shadow: 0 3px 12px #00000012;
+}
+
+.section h2 {
+    color: #236b3b;
+    margin-top: 0;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 15px;
+}
+
+.action-card {
+    border: 1px solid #dce8df;
+    padding: 18px;
+    border-radius: 10px;
+    background: #f8fbf8;
+    transition: 0.2s;
+}
+
+.action-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px #00000012;
+}
+
+.action-card h3 {
+    color: #236b3b;
+    margin-top: 0;
+}
+
+.action-card p {
+    color: #555;
+    line-height: 1.5;
+}
+
+.action-card a {
+    color: #236b3b;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.action-card a:hover {
+    text-decoration: underline;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+}
+
+th, td {
+    text-align: left;
+    padding: 13px;
+    border-bottom: 1px solid #e4e9e5;
+}
+
+th {
+    background: #eaf5ed;
+    color: #236b3b;
+}
+
+.empty {
+    color: #777;
+    padding: 15px 0;
+}
+
+.refresh {
+    background: #236b3b;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+footer {
+    text-align: center;
+    padding: 25px;
+    color: #777;
+}
+
+@media(max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+
+    header {
+        padding: 20px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🛡️ ProcureTrack Admin Dashboard</h1>
+    <p>Monitor agricultural procurement and platform activities.</p>
+</header>
+
+<div class="container">
+
+    <div class="topbar">
+        <h2>System Overview</h2>
+
+        <div class="top-actions">
+            <a href="index.html" class="back">← Home</a>
+            <button class="logout" onclick="adminLogout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD STATISTICS -->
+
+    <div class="stats">
+
+        <div class="stat-card">
+            <h3>Farmers with Records</h3>
+            <p id="totalFarmers">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Customers with Orders</h3>
+            <p id="totalCustomers">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Total Bookings</h3>
+            <p id="totalBookings">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Completed Procurement</h3>
+            <p id="completedBookings">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Pending Bookings</h3>
+            <p id="pendingBookings">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Rejected Bookings</h3>
+            <p id="rejectedBookings">0</p>
+        </div>
+
+    </div>
+
+    <!-- ADMIN MANAGEMENT -->
+
+    <div class="section">
+
+        <h2>Admin Management</h2>
+
+        <div class="actions">
+
+            <div class="action-card">
+                <h3>📊 Reports & Analytics</h3>
+                <p>View procurement reports, payment summaries and order statistics.</p>
+                <a href="reports.html">View Reports →</a>
+            </div>
+
+            <div class="action-card">
+                <h3>👨‍🌾 Farmer Management</h3>
+                <p>Search farmers and view their products and procurement bookings.</p>
+                <a href="farmer-management.html">Manage Farmers →</a>
+            </div>
+
+            <div class="action-card">
+                <h3>🛒 Customer Management</h3>
+                <p>View customers, their orders, quantities and order statuses.</p>
+                <a href="customer-management.html">Manage Customers →</a>
+            </div>
+
+            <div class="action-card">
+                <h3>📅 Procurement Schedule</h3>
+                <p>View procurement centre schedules and slot availability.</p>
+                <a href="schedule.html">View Schedule →</a>
+            </div>
+
+            <div class="action-card">
+                <h3>📦 Procurement Bookings</h3>
+                <p>Monitor farmer bookings and procurement progress.</p>
+                <a href="officer.html">View Bookings →</a>
+            </div>
+
+            <div class="action-card">
+                <h3>💰 Payment Records</h3>
+                <p>Review payment status and completed transactions.</p>
+                <a href="admin-payments.html">View Payments →</a>
+            </div>
+
+            <div class="action-card">
+                <h3>🔔 Notifications</h3>
+                <p>Review procurement notifications and payment alerts.</p>
+                <a href="notifications.html">View Notifications →</a>
+            </div>
+
+            <div class="action-card">
+                <h3>🌾 Farmer Products</h3>
+                <p>Review products listed by farmers.</p>
+                <a href="my-products.html">View Products →</a>
+            </div>
+
+            <div class="action-card">
+                <h3>📋 Customer Orders</h3>
+                <p>Monitor customer orders and their progress.</p>
+                <a href="customer-orders.html">View Orders →</a>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- RECENT BOOKINGS -->
+
+    <div class="section">
+
+        <div class="topbar">
+            <h2>Recent Procurement Bookings</h2>
+
+            <button class="refresh" onclick="renderDashboard()">
+                ↻ Refresh
+            </button>
+        </div>
+
+        <div id="bookingTable"></div>
+
+    </div>
+
+</div>
+
+<footer>
+    ProcureTrack © 2026 | QUANTUM LEAPERS
+</footer>
+
+<script>
+
+function getData(key) {
+    try {
+        const data = JSON.parse(localStorage.getItem(key) || "[]");
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function escapeHTML(value) {
+    return String(value ?? "-").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
+
+function renderDashboard() {
+
+    const bookings = getData("procureTrackBookings");
+    const products = getData("procureTrackProducts");
+    const orders = getData("procureTrackOrders");
+
+    // FARMER COUNT
+
+    const farmerNames = new Set();
+
+    bookings.forEach(booking => {
+        if (booking.farmerName) {
+            farmerNames.add(
+                String(booking.farmerName).trim().toLowerCase()
+            );
+        }
+    });
+
+    products.forEach(product => {
+        if (product.farmerName) {
+            farmerNames.add(
+                String(product.farmerName).trim().toLowerCase()
+            );
+        }
+    });
+
+    // CUSTOMER COUNT
+
+    const customerNames = new Set();
+
+    orders.forEach(order => {
+        const name = order.customerName || order.customer;
+
+        if (name) {
+            customerNames.add(
+                String(name).trim().toLowerCase()
+            );
+        }
+    });
+
+    // BOOKING STATUS
+
+    const completed = bookings.filter(booking =>
+        String(
+            booking.paymentStatus || booking.status || ""
+        ).toLowerCase() === "completed" ||
+        String(booking.status || "").toLowerCase() === "payment completed"
+    ).length;
+
+    const rejected = bookings.filter(booking =>
+        ["rejected", "cancelled"].includes(
+            String(booking.status || "").toLowerCase()
+        )
+    ).length;
+
+    const pending = bookings.length - completed - rejected;
+
+    // UPDATE STATISTICS
+
+    document.getElementById("totalFarmers").textContent =
+        farmerNames.size;
+
+    document.getElementById("totalCustomers").textContent =
+        customerNames.size;
+
+    document.getElementById("totalBookings").textContent =
+        bookings.length;
+
+    document.getElementById("completedBookings").textContent =
+        completed;
+
+    document.getElementById("pendingBookings").textContent =
+        pending;
+
+    document.getElementById("rejectedBookings").textContent =
+        rejected;
+
+    renderBookingTable(bookings);
+}
+
+// RECENT BOOKING TABLE
+
+function renderBookingTable(bookings) {
+
+    const container = document.getElementById("bookingTable");
+
+    if (bookings.length === 0) {
+        container.innerHTML = `
+            <p class="empty">
+                No procurement bookings available yet.
+            </p>
+        `;
+        return;
+    }
+
+    const recentBookings = [...bookings].reverse().slice(0, 10);
+
+    container.innerHTML = `
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Farmer</th>
+                        <th>Crop</th>
+                        <th>Centre</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    ${recentBookings.map(booking => `
+
+                        <tr>
+
+                            <td>
+                                ${escapeHTML(
+                                    booking.bookingId ||
+                                    booking.bookingID ||
+                                    booking.id
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHTML(booking.farmerName)}
+                            </td>
+
+                            <td>
+                                ${escapeHTML(
+                                    booking.cropName ||
+                                    booking.crop
+                                )}
+                            </td>
+
+                            <td>
+                                ${escapeHTML(booking.centre)}
+                            </td>
+
+                            <td>
+                                ${escapeHTML(booking.date)}
+                            </td>
+
+                            <td>
+                                ${escapeHTML(booking.status || "Booked")}
+                            </td>
+
+                        </tr>
+
+                    `).join("")}
+
+                </tbody>
+
+            </table>
+
+        </div>
+    `;
+}
+
+// LOGOUT
+
+function adminLogout() {
+    sessionStorage.removeItem("userRole");
+    window.location.replace("admin-login.html");
+}
+
+// INITIALIZE DASHBOARD
+
+renderDashboard();
+
+window.addEventListener("storage", renderDashboard);
+
+</script>
+
+</body>
+</html>

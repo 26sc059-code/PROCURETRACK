@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Status - ProcureTrack</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f4;
+            margin: 0;
+            padding: 25px;
+            color: #26352b;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #236b3b;
+        }
+
+        .payment-card {
+            background: white;
+            padding: 22px;
+            margin: 15px 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px #00000012;
+        }
+
+        .payment-card h3 {
+            color: #236b3b;
+            text-transform: capitalize;
+        }
+
+        .details {
+            line-height: 1.9;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 7px 13px;
+            border-radius: 20px;
+            background: #fff0c2;
+            color: #805b00;
+            font-weight: bold;
+        }
+
+        .paid {
+            background: #d8f5df;
+            color: #17652b;
+        }
+
+        .processing {
+            background: #dcecff;
+            color: #15549a;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #16733b;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .empty {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .amount {
+            font-size: 20px;
+            font-weight: bold;
+            color: #236b3b;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a class="back" href="FARMER.HTML">
+        ← Back to Farmer Dashboard
+    </a>
+
+    <h1>Payment Status</h1>
+
+    <p>Track payments for your procurement bookings.</p>
+
+    <div id="paymentList"></div>
+
+</div>
+
+<script>
+
+function escapeHTML(value) {
+    return String(value ?? "-").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
+}
+
+function getPaymentStatus(booking) {
+
+    // Use the officer's payment status first.
+    if (booking.paymentStatus) {
+        return booking.paymentStatus;
+    }
+
+    // Otherwise, derive payment status from procurement status.
+    if (booking.status === "Payment Completed") {
+        return "Completed";
+    }
+
+    if (booking.status === "Payment Processing") {
+        return "Processing";
+    }
+
+    return "Pending";
+}
+
+function displayPayments() {
+
+    const bookings = JSON.parse(
+        localStorage.getItem("procureTrackBookings") || "[]"
+    );
+
+    const paymentList = document.getElementById("paymentList");
+
+    if (bookings.length === 0) {
+
+        paymentList.innerHTML = `
+            <div class="empty">
+                <h3>No payment records yet</h3>
+                <p>Book a procurement slot to see your payment record here.</p>
+                <a href="book-slot.html">Book Procurement Slot</a>
+            </div>
+        `;
+
+        return;
+    }
+
+    paymentList.innerHTML = bookings.map(booking => {
+
+        const status = getPaymentStatus(booking);
+
+        let statusClass = "";
+
+        if (status.toLowerCase() === "completed") {
+            statusClass = "paid";
+        } else if (status.toLowerCase() === "processing") {
+            statusClass = "processing";
+        }
+
+        const bookingID =
+            booking.bookingId ||
+            booking.bookingID ||
+            booking.tokenId ||
+            booking.id ||
+            "Not Available";
+
+        const cropName =
+            booking.cropName ||
+            booking.crop ||
+            booking.productName ||
+            booking.name ||
+            "Crop";
+
+        const farmerName =
+            booking.farmerName || "Not Available";
+
+        const quantity =
+            booking.quantity || "Not Available";
+
+        const centre =
+            booking.centre || booking.procurementCentre || "Not Available";
+
+        const date =
+            booking.date || booking.bookingDate || "Not Available";
+
+        const actualWeight =
+            booking.actualWeight ?? "Not recorded";
+
+        // Calculate amount only if a procurement rate is available.
+        const rate = Number(booking.pricePerKg || booking.rate || 0);
+
+        const amount = Number(booking.actualWeight) > 0 && rate > 0
+            ? "₹" + (Number(booking.actualWeight) * rate).toFixed(2)
+            : "To be calculated after weighing";
+
+        return `
+            <div class="payment-card">
+
+                <h3>${escapeHTML(cropName)}</h3>
+
+                <div class="details">
+
+                    <p><b>Token ID:</b>
+                        ${escapeHTML(bookingID)}
+                    </p>
+
+                    <p><b>Farmer:</b>
+                        ${escapeHTML(farmerName)}
+                    </p>
+
+                    <p><b>Expected Quantity:</b>
+                        ${escapeHTML(quantity)} Kg
+                    </p>
+
+                    <p><b>Actual Weight:</b>
+                        ${escapeHTML(actualWeight)} Kg
+                    </p>
+
+                    <p><b>Procurement Centre:</b>
+                        ${escapeHTML(centre)}
+                    </p>
+
+                    <p><b>Booking Date:</b>
+                        ${escapeHTML(date)}
+                    </p>
+
+                    <p><b>Payment Amount:</b>
+                        <span class="amount">
+                            ${escapeHTML(amount)}
+                        </span>
+                    </p>
+
+                </div>
+
+                <p>
+                    <b>Payment Status:</b>
+                    <span class="status ${statusClass}">
+                        ${escapeHTML(status)}
+                    </span>
+                </p>
+
+            </div>
+        `;
+
+    }).join("");
+}
+
+displayPayments();
+
+</script>
+
+</body>
+</html>

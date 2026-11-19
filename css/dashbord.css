@@ -1,0 +1,144 @@
+
+.dashboard-header {
+    background: #145c35;
+    color: white;
+    padding: 18px 6%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-header button {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-left: 15px;
+}
+
+.dashboard {
+    padding: 35px 7%;
+}
+
+.welcome {
+    background: #e4f5e9;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+}
+
+.welcome h1 {
+    color: #145c35;
+    margin-bottom: 10px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px #00000012;
+}
+
+.stat-card h2 {
+    color: #16834a;
+    font-size: 32px;
+    margin: 12px 0;
+}
+
+.dashboard-section {
+    margin-top: 40px;
+}
+
+.dashboard-section h2 {
+    margin-bottom: 20px;
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.action-card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #26352b;
+    box-shadow: 0 3px 12px #00000012;
+    transition: 0.2s;
+}
+
+.action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 18px #00000020;
+}
+
+.action-card span {
+    font-size: 30px;
+}
+
+.action-card h3 {
+    margin: 12px 0;
+    color: #16834a;
+}
+
+.action-card p {
+    line-height: 1.5;
+}
+
+@media (max-width: 750px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 450px) {
+    .stats, .actions {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-header {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 15px;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+form button {
+    background: #16834a;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+form button:hover {
+    background: #105c34;
+}
+

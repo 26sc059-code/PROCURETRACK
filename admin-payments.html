@@ -1,0 +1,426 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Payment Records | ProcureTrack</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f3f6f4;
+            color: #26352c;
+            padding: 25px;
+        }
+
+        header {
+            background: #174d35;
+            color: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            margin-bottom: 8px;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        button, .back-btn {
+            border: none;
+            padding: 11px 17px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            background: white;
+            color: #174d35;
+        }
+
+        .logout-btn {
+            background: #c0392b;
+            color: white;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        }
+
+        .card p {
+            color: #64746a;
+            margin-bottom: 12px;
+        }
+
+        .card h2 {
+            color: #174d35;
+            font-size: 27px;
+        }
+
+        .section {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 18px 0;
+        }
+
+        input, select {
+            padding: 12px;
+            border: 1px solid #ccd5ce;
+            border-radius: 7px;
+            min-width: 200px;
+            flex: 1;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 850px;
+        }
+
+        th, td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #e5eae6;
+        }
+
+        th {
+            background: #eaf2ec;
+            color: #174d35;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .completed {
+            background: #d9f5e2;
+            color: #16743b;
+        }
+
+        .pending {
+            background: #fff0c9;
+            color: #986500;
+        }
+
+        .other {
+            background: #e8e8e8;
+            color: #555;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 30px;
+            color: #777;
+        }
+
+        .refresh-btn {
+            background: #174d35;
+            color: white;
+        }
+
+        @media(max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            header, .section {
+                padding: 17px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Admin Payment Records</h1>
+    <p>Monitor farmer procurement payments and payment status.</p>
+
+    <div class="top-actions">
+        <a href="admin.html" class="back-btn">Back to Dashboard</a>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+</header>
+
+<div class="summary">
+    <div class="card">
+        <p>Total Payments</p>
+        <h2 id="totalPayments">0</h2>
+    </div>
+
+    <div class="card">
+        <p>Completed Payments</p>
+        <h2 id="completedPayments">0</h2>
+    </div>
+
+    <div class="card">
+        <p>Pending Payments</p>
+        <h2 id="pendingPayments">0</h2>
+    </div>
+
+    <div class="card">
+        <p>Total Recorded Amount</p>
+        <h2 id="totalAmount">₹0</h2>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Payment Details</h2>
+    <p>Search and filter farmer payment records.</p>
+
+    <div class="controls">
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="Search farmer or booking ID..."
+            oninput="displayPayments()"
+        >
+
+        <select id="statusFilter" onchange="displayPayments()">
+            <option value="all">All Payment Status</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="other">Other Status</option>
+        </select>
+
+        <button class="refresh-btn" onclick="loadPayments()">Refresh</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Farmer Name</th>
+                    <th>Crop</th>
+                    <th>Actual Weight</th>
+                    <th>Rate / Kg</th>
+                    <th>Amount</th>
+                    <th>Payment Status</th>
+                </tr>
+            </thead>
+
+            <tbody id="paymentTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    if (sessionStorage.getItem("userRole") !== "admin") {
+        window.location.href = "admin-login.html";
+    }
+
+    let paymentRecords = [];
+
+    function getAmount(booking) {
+        const savedAmount =
+            booking.amount ??
+            booking.totalAmount ??
+            booking.paymentAmount;
+
+        if (savedAmount !== undefined && savedAmount !== null && savedAmount !== "") {
+            return Number(savedAmount) || 0;
+        }
+
+        const weight = Number(
+            booking.actualWeight ??
+            booking.actualQuantity ??
+            0
+        );
+
+        const rate = Number(
+            booking.pricePerKg ??
+            booking.rate ??
+            booking.price ??
+            0
+        );
+
+        return weight * rate;
+    }
+
+    function getPaymentStatus(booking) {
+        return String(
+            booking.paymentStatus ||
+            "Pending"
+        ).trim();
+    }
+
+    function loadPayments() {
+        paymentRecords = JSON.parse(
+            localStorage.getItem("procureTrackBookings") || "[]"
+        );
+
+        updateSummary();
+        displayPayments();
+    }
+
+    function updateSummary() {
+        const completed = paymentRecords.filter(booking =>
+            getPaymentStatus(booking).toLowerCase() === "completed"
+        );
+
+        const pending = paymentRecords.filter(booking =>
+            getPaymentStatus(booking).toLowerCase() === "pending"
+        );
+
+        const total = paymentRecords.reduce(
+            (sum, booking) => sum + getAmount(booking), 0
+        );
+
+        document.getElementById("totalPayments").textContent =
+            paymentRecords.length;
+
+        document.getElementById("completedPayments").textContent =
+            completed.length;
+
+        document.getElementById("pendingPayments").textContent =
+            pending.length;
+
+        document.getElementById("totalAmount").textContent =
+            "₹" + total.toLocaleString("en-IN");
+    }
+
+    function displayPayments() {
+        const table = document.getElementById("paymentTable");
+        const search = document.getElementById("searchInput")
+            .value.toLowerCase();
+
+        const filter = document.getElementById("statusFilter").value;
+
+        const filtered = paymentRecords.filter(booking => {
+            const farmer = String(booking.farmerName || "").toLowerCase();
+            const bookingId = String(booking.bookingId || booking.id || "").toLowerCase();
+            const status = getPaymentStatus(booking).toLowerCase();
+
+            const matchesSearch =
+                farmer.includes(search) ||
+                bookingId.includes(search);
+
+            let matchesStatus = true;
+
+            if (filter === "completed") {
+                matchesStatus = status === "completed";
+            } else if (filter === "pending") {
+                matchesStatus = status === "pending";
+            } else if (filter === "other") {
+                matchesStatus =
+                    status !== "completed" &&
+                    status !== "pending";
+            }
+
+            return matchesSearch && matchesStatus;
+        });
+
+        if (filtered.length === 0) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="7" class="empty">
+                        No payment records found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        table.innerHTML = filtered.map(booking => {
+            const status = getPaymentStatus(booking);
+            const lowerStatus = status.toLowerCase();
+
+            let statusClass = "other";
+
+            if (lowerStatus === "completed") {
+                statusClass = "completed";
+            } else if (lowerStatus === "pending") {
+                statusClass = "pending";
+            }
+
+            const weight = booking.actualWeight ??
+                booking.actualQuantity ?? "Not weighed";
+
+            const rate = booking.pricePerKg ??
+                booking.rate ?? booking.price ?? "Not set";
+
+            const amount = getAmount(booking);
+
+            return `
+                <tr>
+                    <td>${escapeHTML(booking.bookingId || booking.id || "N/A")}</td>
+                    <td>${escapeHTML(booking.farmerName || "N/A")}</td>
+                    <td>${escapeHTML(booking.cropName || booking.crop || "N/A")}</td>
+                    <td>${escapeHTML(String(weight))}</td>
+                    <td>${escapeHTML(String(rate))}</td>
+                    <td>₹${amount.toLocaleString("en-IN")}</td>
+                    <td>
+                        <span class="status ${statusClass}">
+                            ${escapeHTML(status)}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    function escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        })[character]);
+    }
+
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = "admin-login.html";
+    }
+
+    window.addEventListener("storage", loadPayments);
+
+    loadPayments();
+</script>
+
+</body>
+</html>
